@@ -21,7 +21,7 @@ fn main() {
                     break;
                 }
                 buffer.truncate(n - 1);
-                for line in run.output_for_line(&buffer.to_string()) {
+                for line in run.output_for_line(&buffer) {
                     println!("{}", line);
                 }
                 buffer.clear();
