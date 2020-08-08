@@ -46,7 +46,7 @@ pub struct Record<'a> {
     pub fields: &'a Vec<&'a str>,
 }
 
-static empty_string: &'static str = "";
+static empty_string: &str = "";
 
 impl ProgramRun<'_> {
     pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
