@@ -41,20 +41,25 @@ pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
     }
 }
 
+pub struct Record<'a> {
+    pub full_line: &'a str,
+    pub fields: &'a Vec<&'a str>,
+}
+
 static empty_string: &'static str = "";
 
 impl ProgramRun<'_> {
-    pub fn output_for_line<'a>(&self, line: &'a str, fields: &Vec<&'a str>) -> Vec<&'a str> {
+    pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
         self.program
             .rules
             .iter()
             .map(|rule| {
                 match rule.command {
                     Command::Print(Field::WholeLine) => {
-                        line
+                        record.full_line
                     }
                     Command::Print(Field::Indexed(index)) => {
-                        fields.get(index - 1).unwrap_or(&empty_string)
+                        record.fields.get(index - 1).unwrap_or(&empty_string)
                     }
                 }
             })
