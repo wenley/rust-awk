@@ -21,7 +21,8 @@ fn main() {
                     break;
                 }
                 buffer.truncate(n - 1);
-                for line in run.output_for_line(&buffer) {
+                let fields: Vec<&str> = buffer.split_whitespace().collect();
+                for line in run.output_for_line(&buffer, &fields) {
                     println!("{}", line);
                 }
                 buffer.clear();
