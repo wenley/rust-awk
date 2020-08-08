@@ -21,7 +21,25 @@ impl Command {
     }
 }
 
+pub struct Compare {
+}
+
+enum Pattern {
+    MatchEverything,
+    Compare(Compare),
+}
+
+impl Pattern {
+    pub fn matches<'a>(&self, _record: &Record<'a>) -> bool {
+        match self {
+            Pattern::MatchEverything => { true }
+            Pattern::Compare(_compare) => { false }
+        }
+    }
+}
+
 pub struct Rule {
+    pattern: Pattern,
     command: Command,
 }
 
@@ -33,7 +51,8 @@ pub fn parse_program(_program_text: String) -> Program {
     Program {
         rules: vec![
             Rule {
-                command: Command::Print(Field::Indexed(1)),
+                pattern: Pattern::MatchEverything,
+                command: Command::Print(Field::Indexed(3)),
             }
         ],
     }
@@ -66,6 +85,9 @@ impl ProgramRun<'_> {
         self.program
             .rules
             .iter()
+            .filter(|rule| {
+                rule.pattern.matches(record)
+            })
             .flat_map(|rule| {
                 rule.command.output_for_line(record)
             })
