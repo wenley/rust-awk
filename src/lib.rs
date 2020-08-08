@@ -8,6 +8,19 @@ enum Command {
     Print(Field),
 }
 
+impl Command {
+    pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
+        match self {
+            Command::Print(Field::WholeLine) => {
+                vec![record.full_line]
+            }
+            Command::Print(Field::Indexed(index)) => {
+                vec![record.fields.get(index - 1).unwrap_or(&empty_string)]
+            }
+        }
+    }
+}
+
 pub struct Rule {
     command: Command,
 }
@@ -53,15 +66,8 @@ impl ProgramRun<'_> {
         self.program
             .rules
             .iter()
-            .map(|rule| {
-                match rule.command {
-                    Command::Print(Field::WholeLine) => {
-                        record.full_line
-                    }
-                    Command::Print(Field::Indexed(index)) => {
-                        record.fields.get(index - 1).unwrap_or(&empty_string)
-                    }
-                }
+            .flat_map(|rule| {
+                rule.command.output_for_line(record)
             })
             .collect()
     }
