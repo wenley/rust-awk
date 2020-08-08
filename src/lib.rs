@@ -1,6 +1,11 @@
 
+enum Field {
+    WholeLine,
+    Indexed(u8),
+}
+
 enum Command {
-    Print,
+    Print(Field),
 }
 
 pub struct Rule {
@@ -15,7 +20,7 @@ pub fn parse_program(_program_text: String) -> Program {
     Program {
         rules: vec![
             Rule {
-                command: Command::Print,
+                command: Command::Print(Field::WholeLine),
             }
         ],
     }
@@ -43,8 +48,11 @@ impl ProgramRun<'_> {
             .iter()
             .flat_map(|rule| {
                 match rule.command {
-                    Command::Print => {
+                    Command::Print(Field::WholeLine) => {
                         vec![line]
+                    }
+                    Command::Print(Field::Indexed(u8)) => {
+                        panic!("indexed print")
                     }
                 }
             })
