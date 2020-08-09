@@ -20,6 +20,9 @@ impl Command {
             }
         }
     }
+
+    pub fn execute(&self, _run: &mut ProgramRun) {
+    }
 }
 
 enum Pattern {
@@ -94,5 +97,18 @@ impl ProgramRun<'_> {
                 rule.command.output_for_line(record)
             })
             .collect()
+    }
+
+    pub fn execute_begin(&mut self) {
+        self.program.rules.iter()
+            .filter(|rule| {
+                match rule.pattern {
+                    Pattern::Begin => { true }
+                    _ => { false }
+                }
+            })
+            .for_each(|begin_rule| {
+                begin_rule.command.execute(self)
+            });
     }
 }
