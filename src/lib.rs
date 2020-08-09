@@ -16,7 +16,7 @@ impl Command {
                 vec![record.full_line]
             }
             Command::Print(Field::Indexed(index)) => {
-                vec![record.fields.get(index - 1).unwrap_or(&empty_string)]
+                vec![record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)]
             }
         }
     }
@@ -80,7 +80,7 @@ pub struct Record<'a> {
     pub fields: &'a Vec<&'a str>,
 }
 
-static empty_string: &str = "";
+static EMPTY_STRING: &str = "";
 
 impl ProgramRun<'_> {
     pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
