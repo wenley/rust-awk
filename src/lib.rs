@@ -22,20 +22,20 @@ impl Command {
     }
 }
 
-pub struct Compare {
-    expression: expression::Expression
-}
-
 enum Pattern {
     MatchEverything,
-    Compare(Compare),
+    Begin,
+    End,
+    Expression(expression::Expression)
 }
 
 impl Pattern {
     pub fn matches<'a>(&self, _record: &Record<'a>) -> bool {
         match self {
             Pattern::MatchEverything => { true }
-            Pattern::Compare(_compare) => { false }
+            Pattern::Begin => { false }
+            Pattern::End => { false }
+            Pattern::Expression(_compare) => { false }
         }
     }
 }
