@@ -5,17 +5,17 @@ enum Field {
     Indexed(usize),
 }
 
-enum Command {
+enum Action {
     Print(Field),
 }
 
-impl Command {
+impl Action {
     pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
         match self {
-            Command::Print(Field::WholeLine) => {
+            Action::Print(Field::WholeLine) => {
                 vec![record.full_line]
             }
-            Command::Print(Field::Indexed(index)) => {
+            Action::Print(Field::Indexed(index)) => {
                 vec![record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)]
             }
         }
@@ -45,7 +45,7 @@ impl Pattern {
 
 pub struct Rule {
     pattern: Pattern,
-    command: Command,
+    action: Action,
 }
 
 pub struct Program {
@@ -57,7 +57,7 @@ pub fn parse_program(_program_text: String) -> Program {
         rules: vec![
             Rule {
                 pattern: Pattern::MatchEverything,
-                command: Command::Print(Field::Indexed(3)),
+                action: Action::Print(Field::Indexed(3)),
             }
         ],
     }
@@ -94,7 +94,7 @@ impl ProgramRun<'_> {
                 rule.pattern.matches(record)
             })
             .flat_map(|rule| {
-                rule.command.output_for_line(record)
+                rule.action.output_for_line(record)
             })
             .collect()
     }
@@ -108,7 +108,7 @@ impl ProgramRun<'_> {
                 }
             })
             .for_each(|begin_rule| {
-                begin_rule.command.execute(self)
+                begin_rule.action.execute(self)
             });
     }
 }
