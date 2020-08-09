@@ -1,3 +1,4 @@
+pub mod expression;
 
 enum Field {
     WholeLine,
@@ -22,6 +23,7 @@ impl Command {
 }
 
 pub struct Compare {
+    expression: expression::Expression
 }
 
 enum Pattern {
