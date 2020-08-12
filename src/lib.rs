@@ -1,59 +1,17 @@
 pub mod expression;
 pub mod basic_types;
-
-enum Action {
-    Print(basic_types::Field),
-}
-
-impl Action {
-    pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
-        match self {
-            Action::Print(basic_types::Field::WholeLine) => {
-                vec![record.full_line]
-            }
-            Action::Print(basic_types::Field::Indexed(index)) => {
-                vec![record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)]
-            }
-        }
-    }
-
-    pub fn execute(&self, _run: &mut ProgramRun) {
-    }
-}
-
-enum Pattern {
-    MatchEverything,
-    Begin,
-    End,
-    Expression(expression::Expression)
-}
-
-impl Pattern {
-    pub fn matches<'a>(&self, _record: &basic_types::Record<'a>) -> bool {
-        match self {
-            Pattern::MatchEverything => { true }
-            Pattern::Begin => { false }
-            Pattern::End => { false }
-            Pattern::Expression(_compare) => { false }
-        }
-    }
-}
-
-pub struct Item {
-    pattern: Pattern,
-    action: Action,
-}
+pub mod item;
 
 pub struct Program {
-    items: Vec<Item>,
+    items: Vec<item::Item>,
 }
 
 pub fn parse_program(_program_text: String) -> Program {
     Program {
         items: vec![
-            Item {
-                pattern: Pattern::MatchEverything,
-                action: Action::Print(basic_types::Field::Indexed(3)),
+            item::Item {
+                pattern: item::Pattern::MatchEverything,
+                action: item::Action::Print(basic_types::Field::Indexed(3)),
             }
         ],
     }
@@ -74,8 +32,6 @@ pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
     }
 }
 
-static EMPTY_STRING: &str = "";
-
 impl ProgramRun<'_> {
     pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
         self.program
@@ -94,12 +50,15 @@ impl ProgramRun<'_> {
         self.program.items.iter()
             .filter(|item| {
                 match item.pattern {
-                    Pattern::Begin => { true }
+                    item::Pattern::Begin => { true }
                     _ => { false }
                 }
             })
             .for_each(|begin_rule| {
-                begin_rule.action.execute(self)
+                self.execute_action(&begin_rule.action)
             });
+    }
+
+    fn execute_action(&mut self, action: &item::Action) {
     }
 }
