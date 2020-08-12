@@ -39,19 +39,19 @@ impl Pattern {
     }
 }
 
-pub struct Rule {
+pub struct Item {
     pattern: Pattern,
     action: Action,
 }
 
 pub struct Program {
-    rules: Vec<Rule>,
+    items: Vec<Item>,
 }
 
 pub fn parse_program(_program_text: String) -> Program {
     Program {
-        rules: vec![
-            Rule {
+        items: vec![
+            Item {
                 pattern: Pattern::MatchEverything,
                 action: Action::Print(basic_types::Field::Indexed(3)),
             }
@@ -79,21 +79,21 @@ static EMPTY_STRING: &str = "";
 impl ProgramRun<'_> {
     pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
         self.program
-            .rules
+            .items
             .iter()
-            .filter(|rule| {
-                rule.pattern.matches(record)
+            .filter(|item| {
+                item.pattern.matches(record)
             })
-            .flat_map(|rule| {
-                rule.action.output_for_line(record)
+            .flat_map(|item| {
+                item.action.output_for_line(record)
             })
             .collect()
     }
 
     pub fn execute_begin(&mut self) {
-        self.program.rules.iter()
-            .filter(|rule| {
-                match rule.pattern {
+        self.program.items.iter()
+            .filter(|item| {
+                match item.pattern {
                     Pattern::Begin => { true }
                     _ => { false }
                 }
