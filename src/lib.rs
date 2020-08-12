@@ -6,7 +6,7 @@ enum Action {
 }
 
 impl Action {
-    pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
+    pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
         match self {
             Action::Print(basic_types::Field::WholeLine) => {
                 vec![record.full_line]
@@ -29,7 +29,7 @@ enum Pattern {
 }
 
 impl Pattern {
-    pub fn matches<'a>(&self, _record: &Record<'a>) -> bool {
+    pub fn matches<'a>(&self, _record: &basic_types::Record<'a>) -> bool {
         match self {
             Pattern::MatchEverything => { true }
             Pattern::Begin => { false }
@@ -74,15 +74,10 @@ pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
     }
 }
 
-pub struct Record<'a> {
-    pub full_line: &'a str,
-    pub fields: &'a Vec<&'a str>,
-}
-
 static EMPTY_STRING: &str = "";
 
 impl ProgramRun<'_> {
-    pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
+    pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
         self.program
             .rules
             .iter()
