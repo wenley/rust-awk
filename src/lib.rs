@@ -11,7 +11,11 @@ pub fn parse_program(_program_text: String) -> Program {
         items: vec![
             item::Item {
                 pattern: item::Pattern::MatchEverything,
-                action: item::Action::Print(basic_types::Field::Indexed(3)),
+                action: item::Action {
+                    statements: vec![
+                        item::Statement::Print(basic_types::Field::Indexed(3)),
+                    ],
+                }
             }
         ],
     }

@@ -3,20 +3,29 @@ use crate::basic_types;
 
 static EMPTY_STRING: &str = "";
 
-pub enum Action {
+pub enum Statement {
     Print(basic_types::Field),
+}
+
+pub struct Action {
+    pub statements: Vec<Statement>,
 }
 
 impl Action {
     pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
-        match self {
-            Action::Print(basic_types::Field::WholeLine) => {
-                vec![record.full_line]
-            }
-            Action::Print(basic_types::Field::Indexed(index)) => {
-                vec![record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)]
-            }
-        }
+        self.statements
+            .iter()
+            .map(|statement| {
+                match statement {
+                    Statement::Print(basic_types::Field::WholeLine) => {
+                        record.full_line
+                    }
+                    Statement::Print(basic_types::Field::Indexed(index)) => {
+                        record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)
+                    }
+                }
+            })
+            .collect()
     }
 }
 
