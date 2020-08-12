@@ -6,7 +6,7 @@ pub struct Program {
     items: Vec<item::Item>,
 }
 
-pub fn parse_program(_program_text: String) -> Program {
+pub fn parse_program(_program_text: &str) -> Program {
     Program {
         items: vec![
             item::Item {

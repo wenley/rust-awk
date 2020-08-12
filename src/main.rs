@@ -5,7 +5,7 @@ extern crate rust_awk;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let program = rust_awk::parse_program("".to_string());
+    let program = rust_awk::parse_program("");
     let mut run = rust_awk::start_run(&program);
 
     println!("Hello, world!");
