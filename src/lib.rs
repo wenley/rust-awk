@@ -1,21 +1,17 @@
 pub mod expression;
-
-enum Field {
-    WholeLine,
-    Indexed(usize),
-}
+pub mod basic_types;
 
 enum Action {
-    Print(Field),
+    Print(basic_types::Field),
 }
 
 impl Action {
     pub fn output_for_line<'a>(&self, record: &Record<'a>) -> Vec<&'a str> {
         match self {
-            Action::Print(Field::WholeLine) => {
+            Action::Print(basic_types::Field::WholeLine) => {
                 vec![record.full_line]
             }
-            Action::Print(Field::Indexed(index)) => {
+            Action::Print(basic_types::Field::Indexed(index)) => {
                 vec![record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)]
             }
         }
@@ -57,7 +53,7 @@ pub fn parse_program(_program_text: String) -> Program {
         rules: vec![
             Rule {
                 pattern: Pattern::MatchEverything,
-                action: Action::Print(Field::Indexed(3)),
+                action: Action::Print(basic_types::Field::Indexed(3)),
             }
         ],
     }
