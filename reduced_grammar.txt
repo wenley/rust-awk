@@ -111,7 +111,13 @@ binary_expr      : expr '^' expr
                  | expr AND newline_opt expr
                  | expr OR  newline_opt expr
                  | expr '?' expr ':' expr
-                 | boolean_expr
+                 | expr '<' expr
+                 | expr LE  expr
+                 | expr LE  expr
+                 | expr NE  expr
+                 | expr EQ  expr
+                 | expr '>' expr
+                 | expr GE  expr
                  ;
 
 non_unary_expr   : '(' expr ')'
@@ -120,22 +126,11 @@ non_unary_expr   : '(' expr ')'
                  | lvalue
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
-                 | boolean_expr
                  ;
 
 literal_expr     : NUMBER
                  | STRING
                  | ERE
-                 ;
-
-
-boolean_expr     : expr '<' expr
-                 | expr LE  expr
-                 | expr LE  expr
-                 | expr NE  expr
-                 | expr EQ  expr
-                 | expr '>' expr
-                 | expr GE  expr
                  ;
 
 
