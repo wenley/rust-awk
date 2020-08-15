@@ -1,16 +1,11 @@
 use regex::Regex;
 
-pub enum Literal {
-    StringLiteral(String),
-    IntegerLiteral(u64),
-    FloatLiteral(f64),
-}
-
 pub enum Expression {
-    Literal(Literal)
+    StringLiteral(String),
+    NumericLiteral(NumericValue),
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq,Debug,Clone)]
 pub enum NumericValue {
     Integer(u64),
     Float(f64),
@@ -25,14 +20,8 @@ pub enum Value {
 impl Expression {
     pub fn evaluate(&self) -> Value {
         match self {
-            Expression::Literal(literal) => {
-                match literal {
-                    Literal::StringLiteral(string) => { Value::String(string.clone()) }
-                    Literal::IntegerLiteral(int) => { Value::Numeric(NumericValue::Integer(*int)) }
-                    Literal::FloatLiteral(float) => { Value::Numeric(NumericValue::Float(*float)) }
-
-                }
-            }
+            Expression::StringLiteral(string) => { Value::String(string.clone()) }
+            Expression::NumericLiteral(numeric) => { Value::Numeric(numeric.clone()) }
         }
     }
 }
@@ -43,7 +32,11 @@ mod tests {
 
     #[test]
     fn literals_can_evaluate() {
-        assert_eq!(Expression::Literal(Literal::StringLiteral("hello".to_string())).evaluate(), Value::String("hello".to_string()));
-        assert_eq!(Expression::Literal(Literal::IntegerLiteral(0)).evaluate(), Value::Numeric(NumericValue::Integer(0)));
+        assert_eq!(Expression::StringLiteral("hello".to_string()).evaluate(), Value::String("hello".to_string()));
+        assert_eq!(Expression::NumericLiteral(NumericValue::Integer(0)).evaluate(), Value::Numeric(NumericValue::Integer(0)));
+    }
+
+    #[test]
+    fn variables_can_evaluate() {
     }
 }
