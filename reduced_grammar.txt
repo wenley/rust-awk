@@ -36,9 +36,6 @@ terminated_statement : action newline_opt
                  | If '(' expr ')' newline_opt terminated_statement
                        Else newline_opt terminated_statement
                  | While '(' expr ')' newline_opt terminated_statement
-                 | For '(' simple_statement_opt ';'
-                      expr_opt ';' simple_statement_opt ')' newline_opt
-                      terminated_statement
                  | For '(' NAME In NAME ')' newline_opt
                       terminated_statement
                  | terminator
