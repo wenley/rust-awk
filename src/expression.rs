@@ -15,7 +15,7 @@ impl Expression {
         match self {
             Expression::StringLiteral(string) => { Value::String(string.clone()) }
             Expression::NumericLiteral(numeric) => { Value::Numeric(numeric.clone()) }
-            Expression::AddBinary { left: left, right: right } => {
+            Expression::AddBinary { left, right } => {
                 match (left.evaluate(), right.evaluate()) {
                     (Value::Numeric(NumericValue::Integer(x)), Value::Numeric(NumericValue::Integer(y))) => { Value::Numeric(NumericValue::Integer(x + y)) }
                     _ => { panic!("Unsupported addition values {:?} and {:?}", left, right) }
