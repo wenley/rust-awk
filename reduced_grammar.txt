@@ -14,7 +14,6 @@ item             : pattern action
 pattern          : Begin
                  | End
                  | expr
-                 | expr ',' newline_opt expr
                  ;
 
 

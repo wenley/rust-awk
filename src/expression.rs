@@ -9,7 +9,7 @@ pub enum Expression {
     StringLiteral(String),
     NumericLiteral(NumericValue),
     AddBinary { left: Box<Expression>, right: Box<Expression> },
-    Variable(String)
+    Variable(String),
 }
 
 impl Expression {
