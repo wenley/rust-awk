@@ -115,20 +115,14 @@ unary_expr       : '+' expr
                  | unary_expr '+'      expr
                  | unary_expr '-'      expr
                  | unary_expr          non_unary_expr
-                 | unary_expr '<'      expr
-                 | unary_expr LE       expr
-                 | unary_expr NE       expr
-                 | unary_expr EQ       expr
-                 | unary_expr '>'      expr
-                 | unary_expr GE       expr
                  | unary_expr '˜'      expr
                  | unary_expr NO_MATCH expr
                  | unary_expr In NAME
                  | unary_expr AND newline_opt expr
                  | unary_expr OR  newline_opt expr
                  | unary_expr '?' expr ':' expr
+                 | boolean_expr
                  ;
-
 
 non_unary_expr   : '(' expr ')'
                  | '!' expr
@@ -139,12 +133,6 @@ non_unary_expr   : '(' expr ')'
                  | non_unary_expr '+'      expr
                  | non_unary_expr '-'      expr
                  | non_unary_expr          non_unary_expr
-                 | non_unary_expr '<'      expr
-                 | non_unary_expr LE       expr
-                 | non_unary_expr NE       expr
-                 | non_unary_expr EQ       expr
-                 | non_unary_expr '>'      expr
-                 | non_unary_expr GE       expr
                  | non_unary_expr '˜'      expr
                  | non_unary_expr NO_MATCH expr
                  | non_unary_expr In NAME
@@ -171,7 +159,17 @@ non_unary_expr   : '(' expr ')'
                       /* no white space allowed before '(' */
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
+                 | boolean_expr
                  ;
+
+
+boolean_expr     : expr '<' expr
+                 | expr LE  expr
+                 | expr LE  expr
+                 | expr NE  expr
+                 | expr EQ  expr
+                 | expr '>' expr
+                 | expr GE  expr
 
 
 print_expr_list_opt : /* empty */
