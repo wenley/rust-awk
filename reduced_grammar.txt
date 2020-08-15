@@ -66,12 +66,7 @@ simple_statement : Delete NAME '[' expr_list ']'
                  ;
 
 
-print_statement  : simple_print_statement
-                 ;
-
-
-simple_print_statement :
-                 | Print  '(' expr_list ')'
+print_statement  : Print  '(' expr_list ')'
                  ;
 
 
@@ -97,50 +92,44 @@ expr_opt         : /* empty */
 
 expr             : unary_expr
                  | non_unary_expr
+                 | binary_expr
                  ;
 
 
 unary_expr       : '+' expr
                  | '-' expr
-                 | unary_expr '^'      expr
-                 | unary_expr '*'      expr
-                 | unary_expr '/'      expr
-                 | unary_expr '%'      expr
-                 | unary_expr '+'      expr
-                 | unary_expr '-'      expr
-                 | unary_expr          non_unary_expr
-                 | unary_expr '˜'      expr
-                 | unary_expr NO_MATCH expr
-                 | unary_expr In NAME
-                 | unary_expr AND newline_opt expr
-                 | unary_expr OR  newline_opt expr
-                 | unary_expr '?' expr ':' expr
+                 | '!' expr
+                 ;
+
+binary_expr      : expr '^' expr
+                 | expr '*'      expr
+                 | expr '/'      expr
+                 | expr '%'      expr
+                 | expr '+'      expr
+                 | expr '-'      expr
+                 | expr          non_unary_expr
+                 | expr '˜'      expr
+                 | expr NO_MATCH expr
+                 | expr In NAME
+                 | expr AND newline_opt expr
+                 | expr OR  newline_opt expr
+                 | expr '?' expr ':' expr
                  | boolean_expr
                  ;
 
 non_unary_expr   : '(' expr ')'
-                 | '!' expr
-                 | non_unary_expr '^'      expr
-                 | non_unary_expr '*'      expr
-                 | non_unary_expr '/'      expr
-                 | non_unary_expr '%'      expr
-                 | non_unary_expr '+'      expr
-                 | non_unary_expr '-'      expr
-                 | non_unary_expr          non_unary_expr
-                 | non_unary_expr '˜'      expr
-                 | non_unary_expr NO_MATCH expr
-                 | non_unary_expr In NAME
                  | '(' multiple_expr_list ')' In NAME
-                 | non_unary_expr AND newline_opt expr
-                 | non_unary_expr OR  newline_opt expr
-                 | NUMBER
-                 | STRING
+                 | literal_expr
                  | lvalue
-                 | ERE
                  | lvalue '=' expr
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
                  | boolean_expr
+                 ;
+
+literal_expr     : NUMBER
+                 | STRING
+                 | ERE
                  ;
 
 
