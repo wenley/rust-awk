@@ -140,6 +140,7 @@ boolean_expr     : expr '<' expr
                  | expr EQ  expr
                  | expr '>' expr
                  | expr GE  expr
+                 ;
 
 
 lvalue           : NAME
