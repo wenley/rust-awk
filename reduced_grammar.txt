@@ -1,35 +1,13 @@
 program          : item_list
-                 | actionless_item_list
                  ;
 
 
 item_list        : newline_opt
-                 | actionless_item_list item terminator
                  | item_list            item terminator
-                 | item_list          action terminator
-                 ;
-
-
-actionless_item_list : item_list            pattern terminator
-                 | actionless_item_list pattern terminator
                  ;
 
 
 item             : pattern action
-                 | Function NAME      '(' param_list_opt ')'
-                       newline_opt action
-                 | Function FUNC_NAME '(' param_list_opt ')'
-                       newline_opt action
-                 ;
-
-
-param_list_opt   : /* empty */
-                 | param_list
-                 ;
-
-
-param_list       : NAME
-                 | param_list ',' NAME
                  ;
 
 
@@ -42,7 +20,6 @@ pattern          : Begin
 
 action           : '{' newline_opt                             '}'
                  | '{' newline_opt terminated_statement_list   '}'
-                 | '{' newline_opt unterminated_statement_list '}'
                  ;
 
 
@@ -56,12 +33,6 @@ terminator       : terminator ';'
 terminated_statement_list : terminated_statement
                  | terminated_statement_list terminated_statement
                  ;
-
-
-unterminated_statement_list : unterminated_statement
-                 | terminated_statement_list unterminated_statement
-                 ;
-
 
 terminated_statement : action newline_opt
                  | If '(' expr ')' newline_opt terminated_statement
@@ -77,20 +48,6 @@ terminated_statement : action newline_opt
                  | terminatable_statement NEWLINE newline_opt
                  | terminatable_statement ';'     newline_opt
                  ;
-
-
-unterminated_statement : terminatable_statement
-                 | If '(' expr ')' newline_opt unterminated_statement
-                 | If '(' expr ')' newline_opt terminated_statement
-                      Else newline_opt unterminated_statement
-                 | While '(' expr ')' newline_opt unterminated_statement
-                 | For '(' simple_statement_opt ';'
-                  expr_opt ';' simple_statement_opt ')' newline_opt
-                      unterminated_statement
-                 | For '(' NAME In NAME ')' newline_opt
-                      unterminated_statement
-                 ;
-
 
 terminatable_statement : simple_statement
                  | Break
@@ -114,7 +71,6 @@ simple_statement : Delete NAME '[' expr_list ']'
 
 
 print_statement  : simple_print_statement
-                 | simple_print_statement output_redirection
                  ;
 
 
@@ -122,12 +78,6 @@ simple_print_statement : Print  print_expr_list_opt
                  | Print  '(' multiple_expr_list ')'
                  | Printf print_expr_list
                  | Printf '(' multiple_expr_list ')'
-                 ;
-
-
-output_redirection : '>'    expr
-                 | APPEND expr
-                 | '|'    expr
                  ;
 
 
@@ -177,7 +127,6 @@ unary_expr       : '+' expr
                  | unary_expr AND newline_opt expr
                  | unary_expr OR  newline_opt expr
                  | unary_expr '?' expr ':' expr
-                 | unary_input_function
                  ;
 
 
@@ -222,7 +171,6 @@ non_unary_expr   : '(' expr ')'
                       /* no white space allowed before '(' */
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
-                 | non_unary_input_function
                  ;
 
 
@@ -300,21 +248,6 @@ non_unary_print_expr : '(' expr ')'
 lvalue           : NAME
                  | NAME '[' expr_list ']'
                  | '$' expr
-                 ;
-
-
-non_unary_input_function : simple_get
-                 | simple_get '<' expr
-                 | non_unary_expr '|' simple_get
-                 ;
-
-
-unary_input_function : unary_expr '|' simple_get
-                 ;
-
-
-simple_get       : GETLINE
-                 | GETLINE lvalue
                  ;
 
 
