@@ -31,7 +31,7 @@ pub struct ProgramRun<'a> {
 pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
     ProgramRun {
         program: program,
-        context: Context {},
+        context: Context::empty(),
     }
 }
 

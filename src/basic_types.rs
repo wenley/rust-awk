@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 
 pub enum Field {
     WholeLine,
@@ -19,8 +20,23 @@ pub enum NumericValue {
 pub enum Value {
     String(String),
     Numeric(NumericValue),
+    Uninitialized,
 }
+
+static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
 
 pub struct Context {
+    variables: HashMap<String, Value>,
 }
 
+impl Context {
+    pub fn empty() -> Context {
+        Context {
+            variables: HashMap::new(),
+        }
+    }
+
+    pub fn fetch_variable<'a>(&'a self, variable_name: &str) -> &'a Value {
+        self.variables.get(variable_name).unwrap_or(&UNINITIALIZED_VALUE)
+    }
+}
