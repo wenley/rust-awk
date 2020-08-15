@@ -63,6 +63,7 @@ simple_statement_opt : /* empty */
 simple_statement : Delete NAME '[' expr_list ']'
                  | expr
                  | print_statement
+                 | lvalue '=' expr
                  ;
 
 
@@ -121,7 +122,6 @@ non_unary_expr   : '(' expr ')'
                  | '(' multiple_expr_list ')' In NAME
                  | literal_expr
                  | lvalue
-                 | lvalue '=' expr
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
                  | boolean_expr
