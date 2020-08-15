@@ -9,6 +9,18 @@ pub struct Record<'a> {
     pub fields: &'a Vec<&'a str>,
 }
 
+#[derive(PartialEq,Debug,Clone)]
+pub enum NumericValue {
+    Integer(u64),
+    Float(f64),
+}
+
+#[derive(PartialEq,Debug)]
+pub enum Value {
+    String(String),
+    Numeric(NumericValue),
+}
+
 pub struct Context {
 }
 

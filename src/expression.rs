@@ -1,22 +1,13 @@
 use regex::Regex;
 
+use super::basic_types::NumericValue;
+use super::basic_types::Value;
+
 #[derive(Debug)]
 pub enum Expression {
     StringLiteral(String),
     NumericLiteral(NumericValue),
     AddBinary { left: Box<Expression>, right: Box<Expression> },
-}
-
-#[derive(PartialEq,Debug,Clone)]
-pub enum NumericValue {
-    Integer(u64),
-    Float(f64),
-}
-
-#[derive(PartialEq,Debug)]
-pub enum Value {
-    String(String),
-    Numeric(NumericValue),
 }
 
 impl Expression {
