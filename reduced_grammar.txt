@@ -90,6 +90,7 @@ expr_opt         : /* empty */
 expr             : unary_expr
                  | non_unary_expr
                  | binary_expr
+                 | literal_expr
                  ;
 
 
@@ -122,7 +123,6 @@ binary_expr      : expr '^' expr
 
 non_unary_expr   : '(' expr ')'
                  | '(' multiple_expr_list ')' In NAME
-                 | literal_expr
                  | lvalue
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
