@@ -138,21 +138,10 @@ non_unary_expr   : '(' expr ')'
                  | '(' multiple_expr_list ')' In NAME
                  | non_unary_expr AND newline_opt expr
                  | non_unary_expr OR  newline_opt expr
-                 | non_unary_expr '?' expr ':' expr
                  | NUMBER
                  | STRING
                  | lvalue
                  | ERE
-                 | lvalue INCR
-                 | lvalue DECR
-                 | INCR lvalue
-                 | DECR lvalue
-                 | lvalue POW_ASSIGN expr
-                 | lvalue MOD_ASSIGN expr
-                 | lvalue MUL_ASSIGN expr
-                 | lvalue DIV_ASSIGN expr
-                 | lvalue ADD_ASSIGN expr
-                 | lvalue SUB_ASSIGN expr
                  | lvalue '=' expr
                  | FUNC_NAME '(' expr_list_opt ')'
                       /* no white space allowed before '(' */
