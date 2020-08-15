@@ -9,3 +9,6 @@ pub struct Record<'a> {
     pub fields: &'a Vec<&'a str>,
 }
 
+pub struct Context {
+}
+

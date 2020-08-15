@@ -2,6 +2,8 @@ mod expression;
 pub mod basic_types;
 pub mod item;
 
+use basic_types::Context;
+
 pub struct Program {
     items: Vec<item::Item>,
 }
@@ -19,9 +21,6 @@ pub fn parse_program(_program_text: &str) -> Program {
             }
         ],
     }
-}
-
-pub struct Context {
 }
 
 pub struct ProgramRun<'a> {
