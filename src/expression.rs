@@ -1,13 +1,16 @@
 use regex::Regex;
 
-pub enum UnaryExpression {
+pub enum Literal {
+    StringLiteral(String),
+    IntegerLiteral(u64),
+    FloatLiteral(f64),
+
 }
 
-pub enum NonunaryExpression {
-    ExtendedRegex(Regex)
-}
-
-pub enum Expression {
-    Unary(UnaryExpression),
-    Nonunary(NonunaryExpression),
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn literals_can_evaluate() {
+        assert_eq!(Literal::StringLiteral("hello").evaluate(), "hello");
+    }
 }

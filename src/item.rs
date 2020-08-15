@@ -1,4 +1,3 @@
-use crate::expression;
 use crate::basic_types;
 
 static EMPTY_STRING: &str = "";
@@ -33,7 +32,6 @@ pub enum Pattern {
     MatchEverything,
     Begin,
     End,
-    Expression(expression::Expression)
 }
 
 impl Pattern {
@@ -42,7 +40,6 @@ impl Pattern {
             Pattern::MatchEverything => { true }
             Pattern::Begin => { false }
             Pattern::End => { false }
-            Pattern::Expression(_compare) => { false }
         }
     }
 }
