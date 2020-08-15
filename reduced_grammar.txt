@@ -75,8 +75,7 @@ print_statement  : simple_print_statement
 
 
 simple_print_statement :
-                 | Print  '(' multiple_expr_list ')'
-                 | Printf '(' multiple_expr_list ')'
+                 | Print  '(' expr_list ')'
                  ;
 
 
