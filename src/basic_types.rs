@@ -46,10 +46,17 @@ impl Context {
         }
     }
 
-    pub fn fetch_variable<'a>(&'a self, variable_name: &str) -> Value {
+    pub fn fetch_variable(&self, variable_name: &str) -> Value {
         self.variables
             .get(variable_name)
             .map(|val| val.clone())
             .unwrap_or(UNINITIALIZED_VALUE.clone())
+    }
+
+    pub fn assign_variable(&mut self, variable_name: &str, value: Value) {
+        self.variables.insert(
+            variable_name.to_string(),
+            value,
+        );
     }
 }

@@ -43,6 +43,14 @@ mod tests {
 
     #[test]
     fn variables_can_evaluate() {
+        let mut context = Context::empty();
+        let value = Value::Numeric(NumericValue::Integer(1));
+        context.assign_variable("foo", value.clone());
+
+        assert_eq!(
+            Expression::Variable("foo".to_string()).evaluate(&context),
+            value,
+        );
     }
 
     #[test]
