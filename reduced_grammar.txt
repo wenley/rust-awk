@@ -138,8 +138,6 @@ non_unary_expr   : '(' expr ')'
                  | lvalue
                  | ERE
                  | lvalue '=' expr
-                 | FUNC_NAME '(' expr_list_opt ')'
-                      /* no white space allowed before '(' */
                  | BUILTIN_FUNC_NAME '(' expr_list_opt ')'
                  | BUILTIN_FUNC_NAME
                  | boolean_expr
