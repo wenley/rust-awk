@@ -33,7 +33,6 @@ terminated_statement_list : terminated_statement
 
 terminated_statement : action newline_opt
                  | If '(' expr ')' newline_opt terminated_statement
-                 | If '(' expr ')' newline_opt terminated_statement
                        Else newline_opt terminated_statement
                  | While '(' expr ')' newline_opt terminated_statement
                  | For '(' NAME In NAME ')' newline_opt
