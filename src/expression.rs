@@ -15,12 +15,25 @@ pub enum Expression {
 impl Expression {
     pub fn evaluate(&self, context: &Context) -> Value {
         match self {
-            Expression::StringLiteral(string) => { Value::String(string.clone()) }
-            Expression::NumericLiteral(numeric) => { Value::Numeric(numeric.clone()) }
+            Expression::StringLiteral(string) => {
+                Value::String(string.clone())
+            }
+            Expression::NumericLiteral(numeric) => {
+                Value::Numeric(numeric.clone())
+            }
             Expression::AddBinary { left, right } => {
                 match (left.evaluate(context), right.evaluate(context)) {
-                    (Value::Numeric(NumericValue::Integer(x)), Value::Numeric(NumericValue::Integer(y))) => { Value::Numeric(NumericValue::Integer(x + y)) }
-                    _ => { panic!("Unsupported addition values {:?} and {:?}", left, right) }
+                    (Value::Numeric(NumericValue::Integer(x)),
+                     Value::Numeric(NumericValue::Integer(y))) => {
+                        Value::Numeric(NumericValue::Integer(x + y))
+                    }
+                    _ => {
+                        panic!(
+                            "Unsupported addition values {:?} and {:?}",
+                            left,
+                            right,
+                        )
+                    }
                 }
             }
             Expression::Variable(variable_name) => {
@@ -37,8 +50,16 @@ mod tests {
     #[test]
     fn literals_can_evaluate() {
         let context = Context::empty();
-        assert_eq!(Expression::StringLiteral("hello".to_string()).evaluate(&context), Value::String("hello".to_string()));
-        assert_eq!(Expression::NumericLiteral(NumericValue::Integer(0)).evaluate(&context), Value::Numeric(NumericValue::Integer(0)));
+        let string = Expression::StringLiteral("hello".to_string());
+        assert_eq!(
+            string.evaluate(&context),
+            Value::String("hello".to_string())
+        );
+        let numeric = Expression::NumericLiteral(NumericValue::Integer(0));
+        assert_eq!(
+            numeric.evaluate(&context),
+            Value::Numeric(NumericValue::Integer(0))
+        );
     }
 
     #[test]
