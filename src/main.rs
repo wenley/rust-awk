@@ -1,4 +1,3 @@
-
 use std::env;
 use std::io;
 extern crate rust_awk;

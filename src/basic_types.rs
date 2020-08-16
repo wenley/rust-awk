@@ -10,13 +10,13 @@ pub struct Record<'a> {
     pub fields: &'a Vec<&'a str>,
 }
 
-#[derive(PartialEq,Debug,Copy,Clone)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum NumericValue {
     Integer(u64),
     Float(f64),
 }
 
-#[derive(PartialEq,Debug)]
+#[derive(PartialEq, Debug)]
 pub enum Value {
     String(String),
     Numeric(NumericValue),
@@ -26,20 +26,18 @@ pub enum Value {
 impl Value {
     pub fn coerce_to_string(&self) -> String {
         match self {
-            Value::String(string) => { string.clone() }
-            Value::Numeric(NumericValue::Integer(i)) => { i.to_string() }
-            Value::Numeric(NumericValue::Float(f)) => { f.to_string() }
-            Value::Uninitialized => { "".to_string() }
+            Value::String(string) => string.clone(),
+            Value::Numeric(NumericValue::Integer(i)) => i.to_string(),
+            Value::Numeric(NumericValue::Float(f)) => f.to_string(),
+            Value::Uninitialized => "".to_string(),
         }
     }
 
     pub fn coerce_to_numeric(&self) -> NumericValue {
         match self {
-            Value::Numeric(n) => { *n }
-            Value::String(string) => { 
-                panic!("Haven't implemented string to integer coercion")
-            }
-            Value::Uninitialized => { NumericValue::Integer(0) }
+            Value::Numeric(n) => *n,
+            Value::String(string) => panic!("Haven't implemented string to integer coercion"),
+            Value::Uninitialized => NumericValue::Integer(0),
         }
     }
 }
@@ -47,9 +45,9 @@ impl Value {
 impl Clone for Value {
     fn clone(&self) -> Self {
         match self {
-            Value::String(string) => { Value::String(string.clone()) }
-            Value::Numeric(val) => { Value::Numeric(*val) }
-            Value::Uninitialized => { Value::Uninitialized }
+            Value::String(string) => Value::String(string.clone()),
+            Value::Numeric(val) => Value::Numeric(*val),
+            Value::Uninitialized => Value::Uninitialized,
         }
     }
 }
@@ -75,10 +73,7 @@ impl Context {
     }
 
     pub fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        self.variables.insert(
-            variable_name.to_string(),
-            value,
-        );
+        self.variables.insert(variable_name.to_string(), value);
     }
 }
 
@@ -100,10 +95,7 @@ mod tests {
             Value::Numeric(NumericValue::Float(1.234)).coerce_to_string(),
             "1.234"
         );
-        assert_eq!(
-            Value::Uninitialized.coerce_to_string(),
-            ""
-        );
+        assert_eq!(Value::Uninitialized.coerce_to_string(), "");
     }
 
     #[test]

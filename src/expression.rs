@@ -1,44 +1,35 @@
 use regex::Regex;
 
+use super::basic_types::Context;
 use super::basic_types::NumericValue;
 use super::basic_types::Value;
-use super::basic_types::Context;
 
 #[derive(Debug)]
 pub enum Expression {
     StringLiteral(String),
     NumericLiteral(NumericValue),
-    AddBinary { left: Box<Expression>, right: Box<Expression> },
+    AddBinary {
+        left: Box<Expression>,
+        right: Box<Expression>,
+    },
     Variable(String),
 }
 
 impl Expression {
     pub fn evaluate(&self, context: &Context) -> Value {
         match self {
-            Expression::StringLiteral(string) => {
-                Value::String(string.clone())
-            }
-            Expression::NumericLiteral(numeric) => {
-                Value::Numeric(numeric.clone())
-            }
+            Expression::StringLiteral(string) => Value::String(string.clone()),
+            Expression::NumericLiteral(numeric) => Value::Numeric(numeric.clone()),
             Expression::AddBinary { left, right } => {
                 match (left.evaluate(context), right.evaluate(context)) {
-                    (Value::Numeric(NumericValue::Integer(x)),
-                     Value::Numeric(NumericValue::Integer(y))) => {
-                        Value::Numeric(NumericValue::Integer(x + y))
-                    }
-                    _ => {
-                        panic!(
-                            "Unsupported addition values {:?} and {:?}",
-                            left,
-                            right,
-                        )
-                    }
+                    (
+                        Value::Numeric(NumericValue::Integer(x)),
+                        Value::Numeric(NumericValue::Integer(y)),
+                    ) => Value::Numeric(NumericValue::Integer(x + y)),
+                    _ => panic!("Unsupported addition values {:?} and {:?}", left, right,),
                 }
             }
-            Expression::Variable(variable_name) => {
-                context.fetch_variable(variable_name)
-            }
+            Expression::Variable(variable_name) => context.fetch_variable(variable_name),
         }
     }
 }
@@ -81,7 +72,8 @@ mod tests {
             Expression::AddBinary {
                 left: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
                 right: Box::new(Expression::NumericLiteral(NumericValue::Integer(3))),
-            }.evaluate(&context),
+            }
+            .evaluate(&context),
             Value::Numeric(NumericValue::Integer(5)),
         );
     }
