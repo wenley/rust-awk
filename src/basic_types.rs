@@ -36,7 +36,9 @@ impl Value {
     pub fn coerce_to_numeric(&self) -> NumericValue {
         match self {
             Value::Numeric(n) => { *n }
-            Value::String(string) => { panic!("Haven't implemented string to integer coercion") }
+            Value::String(string) => { 
+                panic!("Haven't implemented string to integer coercion")
+            }
             Value::Uninitialized => { NumericValue::Integer(0) }
         }
     }
@@ -86,9 +88,41 @@ mod tests {
 
     #[test]
     fn all_values_coerce_to_strings() {
-        assert_eq!(Value::String("hello".to_string()).coerce_to_string(), "hello");
-        assert_eq!(Value::Numeric(NumericValue::Integer(123)).coerce_to_string(), "123");
-        assert_eq!(Value::Numeric(NumericValue::Float(1.234)).coerce_to_string(), "1.234");
-        assert_eq!(Value::Uninitialized.coerce_to_string(), "");
+        assert_eq!(
+            Value::String("hello".to_string()).coerce_to_string(),
+            "hello"
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Integer(123)).coerce_to_string(),
+            "123"
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Float(1.234)).coerce_to_string(),
+            "1.234"
+        );
+        assert_eq!(
+            Value::Uninitialized.coerce_to_string(),
+            ""
+        );
+    }
+
+    #[test]
+    fn all_values_coerce_to_numerics() {
+        // assert_eq!(
+        //     Value::String("hello".to_string()).coerce_to_numeric(),
+        //     NumericValue::Integer(0)
+        // );
+        assert_eq!(
+            Value::Numeric(NumericValue::Integer(123)).coerce_to_numeric(),
+            NumericValue::Integer(123)
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Float(1.234)).coerce_to_numeric(),
+            NumericValue::Float(1.234)
+        );
+        assert_eq!(
+            Value::Uninitialized.coerce_to_numeric(),
+            NumericValue::Integer(0)
+        );
     }
 }
