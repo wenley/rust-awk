@@ -31,7 +31,7 @@ impl Value {
     pub fn coerce_to_numeric(&self) -> NumericValue {
         match self {
             Value::Numeric(n) => *n,
-            Value::String(string) => panic!("Haven't implemented string to integer coercion"),
+            Value::String(_) => panic!("Haven't implemented string to integer coercion"),
             Value::Uninitialized => NumericValue::Integer(0),
         }
     }
