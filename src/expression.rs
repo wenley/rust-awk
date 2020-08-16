@@ -12,6 +12,7 @@ pub enum Expression {
         left: Box<Expression>,
         right: Box<Expression>,
     },
+    Regex(Regex),
     Variable(String),
 }
 
@@ -28,6 +29,15 @@ impl Expression {
                     ) => Value::Numeric(NumericValue::Integer(x + y)),
                     _ => panic!("Unsupported addition values {:?} and {:?}", left, right,),
                 }
+            }
+            Expression::Regex(_) => {
+                // Regex expressions shouldn't be evaluated as a standalone value, but should be
+                // evaluated as part of explicit pattern matching operators. The one exception is
+                // when a Regex is the pattern for an action, which is handled separately.
+                //
+                // When a Regex is evaluated on its own, it becomes an empty numeric string and
+                // will be interpreted as such
+                Value::Uninitialized
             }
             Expression::Variable(variable_name) => context.fetch_variable(variable_name),
         }
