@@ -13,7 +13,9 @@ pub fn parse_program(_program_text: &str) -> Program {
         items: vec![item::Item {
             pattern: item::Pattern::MatchEverything,
             action: item::Action {
-                statements: vec![item::Statement::Print(basic_types::Field::Indexed(3))],
+                statements: vec![item::Statement::Print(
+                    expression::Expression::StringLiteral("hi".to_string()),
+                )],
             },
         }],
     }
@@ -32,12 +34,12 @@ pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
 }
 
 impl ProgramRun<'_> {
-    pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
+    pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<String> {
         self.program
             .items
             .iter()
             .filter(|item| item.pattern.matches(record))
-            .flat_map(|item| item.action.output_for_line(record))
+            .flat_map(|item| item.action.output_for_line(&self.context, record))
             .collect()
     }
 

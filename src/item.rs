@@ -1,9 +1,10 @@
 use crate::basic_types;
+use crate::expression::Expression;
 
 static EMPTY_STRING: &str = "";
 
 pub enum Statement {
-    Print(basic_types::Field),
+    Print(Expression),
 }
 
 pub struct Action {
@@ -11,14 +12,15 @@ pub struct Action {
 }
 
 impl Action {
-    pub fn output_for_line<'a>(&self, record: &basic_types::Record<'a>) -> Vec<&'a str> {
+    pub fn output_for_line<'a>(
+        &self,
+        context: &basic_types::Context,
+        record: &basic_types::Record<'a>,
+    ) -> Vec<String> {
         self.statements
             .iter()
             .map(|statement| match statement {
-                Statement::Print(basic_types::Field::WholeLine) => record.full_line,
-                Statement::Print(basic_types::Field::Indexed(index)) => {
-                    record.fields.get(index - 1).unwrap_or(&EMPTY_STRING)
-                }
+                Statement::Print(expression) => expression.evaluate(context).coerce_to_string(),
             })
             .collect()
     }
