@@ -40,6 +40,20 @@ impl Value {
             Value::Uninitialized => NumericValue::Integer(0),
         }
     }
+
+    pub fn coercion_to_boolean(&self) -> bool {
+        match self {
+            Value::String(s) => match s.as_str() {
+                "" => false,
+                _ => true,
+            },
+            Value::Numeric(n) => match n {
+                NumericValue::Integer(0) | NumericValue::Float(0.0) => false,
+                _ => true,
+            },
+            Value::Uninitialized => false,
+        }
+    }
 }
 
 impl Clone for Value {
@@ -116,5 +130,31 @@ mod tests {
             Value::Uninitialized.coerce_to_numeric(),
             NumericValue::Integer(0)
         );
+    }
+
+    #[test]
+    fn all_values_coerce_to_booleans() {
+        assert_eq!(Value::String("".to_string()).coercion_to_boolean(), false);
+        assert_eq!(
+            Value::String("anything".to_string()).coercion_to_boolean(),
+            true
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Integer(0)).coercion_to_boolean(),
+            false
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Integer(123)).coercion_to_boolean(),
+            true
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Float(0.0)).coercion_to_boolean(),
+            false
+        );
+        assert_eq!(
+            Value::Numeric(NumericValue::Float(1.0)).coercion_to_boolean(),
+            true
+        );
+        assert_eq!(Value::Uninitialized.coercion_to_boolean(), false);
     }
 }
