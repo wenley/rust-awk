@@ -48,15 +48,16 @@ impl Expression {
                     NumericValue::Integer(i) => { i }
                     NumericValue::Float(f) => { f.floor() as i64 }
                 };
-                if unsafe_index < 0 {
-                    panic!("Field indexes cannot be negative: {}", unsafe_index);
+                match unsafe_index {
+                    i if i < 0 => { panic!("Field indexes cannot be negative: {}", unsafe_index) }
+                    i if i == 0 => { Value::String(record.full_line.to_string()) }
+                    i => {
+                        record.fields
+                            .get((i - 1) as usize)
+                            .map(|s| Value::String(s.to_string()))
+                            .unwrap_or(Value::Uninitialized)
+                    }
                 }
-                let index = unsafe_index as usize;
-
-                record.fields
-                    .get(index)
-                    .map(|s| Value::String(s.to_string()))
-                    .unwrap_or(Value::Uninitialized)
             }
         }
     }
@@ -118,6 +119,21 @@ mod tests {
             }
             .evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(5)),
+        );
+    }
+
+    #[test]
+    fn field_reference_can_evaluate() {
+        let context = Context::empty();
+        let fields = vec!["first", "second"];
+        let record = Record {
+            full_line: "",
+            fields: &fields,
+        };
+
+        assert_eq!(
+            Expression::FieldReference(Box::new(Expression::NumericLiteral(NumericValue::Integer(1)))).evaluate(&context, &record),
+            Value::String("first".to_string()),
         );
     }
 }
