@@ -7,7 +7,7 @@ pub struct Record<'a> {
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub enum NumericValue {
-    Integer(u64),
+    Integer(i64),
     Float(f64),
 }
 
