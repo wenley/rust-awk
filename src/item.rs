@@ -1,6 +1,8 @@
 use crate::basic_types;
 use crate::expression::Expression;
 
+use crate::basic_types::Record;
+
 static EMPTY_STRING: &str = "";
 
 pub enum Statement {
@@ -17,26 +19,26 @@ pub enum Statement {
 }
 
 impl Statement {
-    pub fn evaluate(&self, context: &mut basic_types::Context) -> String {
+    pub fn evaluate<'a>(&self, context: &mut basic_types::Context, record: &'a Record) -> String {
         match self {
-            Statement::Print(expression) => expression.evaluate(context).coerce_to_string(),
+            Statement::Print(expression) => expression.evaluate(context, record).coerce_to_string(),
             Statement::IfElse {
                 condition,
                 if_branch,
                 else_branch,
             } => {
-                let result = condition.evaluate(context).coercion_to_boolean();
+                let result = condition.evaluate(context, record).coercion_to_boolean();
                 if result {
-                    if_branch.evaluate(context)
+                    if_branch.evaluate(context, record)
                 } else {
-                    else_branch.evaluate(context)
+                    else_branch.evaluate(context, record)
                 }
             }
             Statement::Assign {
                 variable_name,
                 value,
             } => {
-                let value = value.evaluate(context);
+                let value = value.evaluate(context, record);
                 context.assign_variable(&variable_name, value);
                 EMPTY_STRING.to_string()
             }
@@ -56,7 +58,7 @@ impl Action {
     ) -> Vec<String> {
         self.statements
             .iter()
-            .map(|statement| statement.evaluate(context))
+            .map(|statement| statement.evaluate(context, record))
             .collect()
     }
 }
@@ -89,13 +91,23 @@ mod tests {
     #[test]
     fn print_statement_produces_value() {
         let mut empty_context = basic_types::Context::empty();
+        let fields = vec![];
+        let record = Record {
+            full_line: "",
+            fields: &fields,
+        };
         let print_statement = Statement::Print(Expression::StringLiteral("hello".to_string()));
-        assert_eq!(print_statement.evaluate(&mut empty_context), "hello",);
+        assert_eq!(print_statement.evaluate(&mut empty_context, &record), "hello",);
     }
 
     #[test]
     fn if_produces_correct_value() {
         let mut empty_context = basic_types::Context::empty();
+        let fields = vec![];
+        let record = Record {
+            full_line: "",
+            fields: &fields,
+        };
 
         let if_conditional = Statement::IfElse {
             condition: Expression::StringLiteral("not empty".to_string()),
@@ -106,7 +118,7 @@ mod tests {
                 "else".to_string(),
             ))),
         };
-        assert_eq!(if_conditional.evaluate(&mut empty_context), "if-branch",);
+        assert_eq!(if_conditional.evaluate(&mut empty_context, &record), "if-branch",);
 
         let else_conditional = Statement::IfElse {
             condition: Expression::StringLiteral("".to_string()),
@@ -117,12 +129,17 @@ mod tests {
                 "else".to_string(),
             ))),
         };
-        assert_eq!(else_conditional.evaluate(&mut empty_context), "else",);
+        assert_eq!(else_conditional.evaluate(&mut empty_context, &record), "else",);
     }
 
     #[test]
     fn assignment_updates_context() {
         let mut context = basic_types::Context::empty();
+        let fields = vec![];
+        let record = Record {
+            full_line: "",
+            fields: &fields,
+        };
 
         let assign = Statement::Assign {
             variable_name: "foo".to_string(),
@@ -135,7 +152,7 @@ mod tests {
                 )),
             },
         };
-        assign.evaluate(&mut context);
+        assign.evaluate(&mut context, &record);
         assert_eq!(
             context.fetch_variable("foo"),
             basic_types::Value::Numeric(basic_types::NumericValue::Integer(3)),
