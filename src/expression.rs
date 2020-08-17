@@ -14,6 +14,7 @@ pub enum Expression {
     },
     Regex(Regex),
     Variable(String),
+    FieldReference(Box<Expression>),
 }
 
 impl Expression {
@@ -40,6 +41,15 @@ impl Expression {
                 Value::Uninitialized
             }
             Expression::Variable(variable_name) => context.fetch_variable(variable_name),
+            Expression::FieldReference(expression) => {
+                let value = expression.evaluate(context).coerce_to_numeric();
+                let index = match value {
+                    NumericValue::Integer(i) => { i }
+                    NumericValue::Float(f) => { f.floor() as i64 }
+                };
+                // TODO: Fetch this from Context
+                Value::String("".to_string())
+            }
         }
     }
 }
