@@ -1,32 +1,16 @@
 pub mod basic_types;
 mod expression;
 pub mod item;
+pub mod parse;
 
 use basic_types::Context;
 
-pub struct Program {
-    items: Vec<item::Item>,
-}
-
-pub fn parse_program(_program_text: &str) -> Program {
-    Program {
-        items: vec![item::Item {
-            pattern: item::Pattern::MatchEverything,
-            action: item::Action {
-                statements: vec![item::Statement::Print(
-                    expression::Expression::StringLiteral("hi".to_string()),
-                )],
-            },
-        }],
-    }
-}
-
 pub struct ProgramRun<'a> {
-    program: &'a Program,
+    program: &'a parse::Program,
     context: Context,
 }
 
-pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
+pub fn start_run<'a>(program: &'a parse::Program) -> ProgramRun<'a> {
     ProgramRun {
         program: program,
         context: Context::empty(),
