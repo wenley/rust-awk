@@ -3,6 +3,7 @@ extern crate regex;
 
 use nom::{
     IResult,
+    branch::alt,
     character::complete::{
         one_of,
         alpha1,
@@ -24,6 +25,10 @@ use crate::{
 
 pub struct Program {
     pub items: Vec<item::Item>,
+}
+
+fn parse_literal(input: &str) -> IResult<&str, Expression> {
+    alt((parse_string_literal, parse_regex_literal))(input)
 }
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
@@ -57,7 +62,7 @@ pub fn parse_program(program_text: &str) -> Program {
         }],
     };
 
-    match parse_string_literal(program_text) {
+    match parse_literal(program_text) {
         Ok((_, expr)) => {
             Program {
                 items: vec![item::Item {
