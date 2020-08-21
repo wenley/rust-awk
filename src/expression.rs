@@ -2,8 +2,8 @@ use regex::Regex;
 
 use super::basic_types::Context;
 use super::basic_types::NumericValue;
-use super::basic_types::Value;
 use super::basic_types::Record;
+use super::basic_types::Value;
 
 #[derive(Debug)]
 pub enum Expression {
@@ -24,7 +24,10 @@ impl Expression {
             Expression::StringLiteral(string) => Value::String(string.clone()),
             Expression::NumericLiteral(numeric) => Value::Numeric(numeric.clone()),
             Expression::AddBinary { left, right } => {
-                match (left.evaluate(context, record), right.evaluate(context, record)) {
+                match (
+                    left.evaluate(context, record),
+                    right.evaluate(context, record),
+                ) {
                     (
                         Value::Numeric(NumericValue::Integer(x)),
                         Value::Numeric(NumericValue::Integer(y)),
@@ -45,18 +48,17 @@ impl Expression {
             Expression::FieldReference(expression) => {
                 let value = expression.evaluate(context, record).coerce_to_numeric();
                 let unsafe_index = match value {
-                    NumericValue::Integer(i) => { i }
-                    NumericValue::Float(f) => { f.floor() as i64 }
+                    NumericValue::Integer(i) => i,
+                    NumericValue::Float(f) => f.floor() as i64,
                 };
                 match unsafe_index {
-                    i if i < 0 => { panic!("Field indexes cannot be negative: {}", unsafe_index) }
-                    i if i == 0 => { Value::String(record.full_line.to_string()) }
-                    i => {
-                        record.fields
-                            .get((i - 1) as usize)
-                            .map(|s| Value::String(s.to_string()))
-                            .unwrap_or(Value::Uninitialized)
-                    }
+                    i if i < 0 => panic!("Field indexes cannot be negative: {}", unsafe_index),
+                    i if i == 0 => Value::String(record.full_line.to_string()),
+                    i => record
+                        .fields
+                        .get((i - 1) as usize)
+                        .map(|s| Value::String(s.to_string()))
+                        .unwrap_or(Value::Uninitialized),
                 }
             }
         }
@@ -132,7 +134,10 @@ mod tests {
         };
 
         assert_eq!(
-            Expression::FieldReference(Box::new(Expression::NumericLiteral(NumericValue::Integer(1)))).evaluate(&context, &record),
+            Expression::FieldReference(Box::new(Expression::NumericLiteral(
+                NumericValue::Integer(1)
+            )))
+            .evaluate(&context, &record),
             Value::String("first".to_string()),
         );
     }

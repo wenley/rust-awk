@@ -97,7 +97,10 @@ mod tests {
             fields: &fields,
         };
         let print_statement = Statement::Print(Expression::StringLiteral("hello".to_string()));
-        assert_eq!(print_statement.evaluate(&mut empty_context, &record), "hello",);
+        assert_eq!(
+            print_statement.evaluate(&mut empty_context, &record),
+            "hello",
+        );
     }
 
     #[test]
@@ -118,7 +121,10 @@ mod tests {
                 "else".to_string(),
             ))),
         };
-        assert_eq!(if_conditional.evaluate(&mut empty_context, &record), "if-branch",);
+        assert_eq!(
+            if_conditional.evaluate(&mut empty_context, &record),
+            "if-branch",
+        );
 
         let else_conditional = Statement::IfElse {
             condition: Expression::StringLiteral("".to_string()),
@@ -129,7 +135,10 @@ mod tests {
                 "else".to_string(),
             ))),
         };
-        assert_eq!(else_conditional.evaluate(&mut empty_context, &record), "else",);
+        assert_eq!(
+            else_conditional.evaluate(&mut empty_context, &record),
+            "else",
+        );
     }
 
     #[test]
