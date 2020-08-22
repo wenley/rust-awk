@@ -67,11 +67,10 @@ fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
 }
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
-    let (input, _) = one_of("\"")(input)?;
-    let (input, contents) = alpha1(input)?;
-    let (input, _) = one_of("\"")(input)?;
-
-    IResult::Ok((input, Expression::StringLiteral(contents.to_string())))
+    map(
+        tuple((one_of("\""), alpha1, one_of("\""))),
+        |(_, contents, _): (char, &str, char)| Expression::StringLiteral(contents.to_string())
+    )(input)
 }
 
 fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
