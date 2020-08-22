@@ -8,8 +8,8 @@ use nom::{
     character::complete::{alpha1, multispace0, none_of, one_of},
     combinator::{map, map_res},
     multi::many1,
-    sequence::{separated_pair, tuple},
     re_find,
+    sequence::{separated_pair, tuple},
     IResult,
 };
 
@@ -37,12 +37,16 @@ fn parse_addition(input: &str) -> IResult<&str, Expression> {
         |(left, right)| Expression::AddBinary {
             left: Box::new(left),
             right: Box::new(right),
-        }
+        },
     )(input)
 }
 
 fn parse_literal(input: &str) -> IResult<&str, Expression> {
-    alt((parse_string_literal, parse_regex_literal, parse_number_literal))(input)
+    alt((
+        parse_string_literal,
+        parse_regex_literal,
+        parse_number_literal,
+    ))(input)
 }
 
 fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
@@ -62,26 +66,22 @@ fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
 fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
     map(
         alt((parse_integer_literal, parse_float_literal)),
-        |number| Expression::NumericLiteral(number)
+        |number| Expression::NumericLiteral(number),
     )(input)
 }
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
     map(
         tuple((one_of("\""), alpha1, one_of("\""))),
-        |(_, contents, _): (char, &str, char)| Expression::StringLiteral(contents.to_string())
+        |(_, contents, _): (char, &str, char)| Expression::StringLiteral(contents.to_string()),
     )(input)
 }
 
 fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
     let parser = tuple((one_of("/"), many1(none_of("/")), one_of("/")));
-    map_res(
-        parser,
-        |(_, vec, _)| {
-            regex::Regex::new(&vec.iter().collect::<String>())
-                .map(|regex| Expression::Regex(regex))
-        }
-    )(input)
+    map_res(parser, |(_, vec, _)| {
+        regex::Regex::new(&vec.iter().collect::<String>()).map(|regex| Expression::Regex(regex))
+    })(input)
 }
 
 pub fn parse_program(program_text: &str) -> Program {
