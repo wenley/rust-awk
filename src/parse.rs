@@ -1,11 +1,14 @@
 extern crate nom;
 extern crate regex;
 
+use crate::basic_types::NumericValue;
+
 use nom::{
     branch::alt,
     character::complete::{alpha1, none_of, one_of},
-    combinator::map_res,
+    combinator::{map, map_res},
     multi::many1,
+    re_find,
     IResult,
 };
 
@@ -16,7 +19,28 @@ pub struct Program {
 }
 
 fn parse_literal(input: &str) -> IResult<&str, Expression> {
-    alt((parse_string_literal, parse_regex_literal))(input)
+    alt((parse_string_literal, parse_regex_literal, parse_number_literal))(input)
+}
+
+fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
+    let (input, matched) = re_find!(input, r"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?")?;
+    let number = matched.parse::<f64>().unwrap();
+
+    IResult::Ok((input, NumericValue::Float(number)))
+}
+
+fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
+    let (input, matched) = re_find!(input, r"[-+]?[0-9]+")?;
+    let number = matched.parse::<i64>().unwrap();
+
+    IResult::Ok((input, NumericValue::Integer(number)))
+}
+
+fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
+    map(
+        alt((parse_integer_literal, parse_float_literal)),
+        |number| Expression::NumericLiteral(number)
+    )(input)
 }
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {

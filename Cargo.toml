@@ -8,4 +8,7 @@ edition = "2018"
 
 [dependencies]
 regex = "1"
-nom = "5.1.2"
+
+[dependencies.nom]
+version = "^5"
+features = ["regexp"]
