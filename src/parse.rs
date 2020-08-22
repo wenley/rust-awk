@@ -74,13 +74,14 @@ fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
 }
 
 fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
-    let (input, _) = one_of("/")(input)?;
-    let (input, contents) = map_res(many1(none_of("/")), |vec| {
-        regex::Regex::new(&vec.iter().collect::<String>())
-    })(input)?;
-    let (input, _) = one_of("/")(input)?;
-
-    IResult::Ok((input, Expression::Regex(contents)))
+    let parser = tuple((one_of("/"), many1(none_of("/")), one_of("/")));
+    map_res(
+        parser,
+        |(_, vec, _)| {
+            regex::Regex::new(&vec.iter().collect::<String>())
+                .map(|regex| Expression::Regex(regex))
+        }
+    )(input)
 }
 
 pub fn parse_program(program_text: &str) -> Program {
