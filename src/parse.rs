@@ -5,9 +5,10 @@ use crate::basic_types::NumericValue;
 
 use nom::{
     branch::alt,
-    character::complete::{alpha1, none_of, one_of},
+    character::complete::{alpha1, multispace0, none_of, one_of},
     combinator::{map, map_res},
     multi::many1,
+    sequence::{separated_pair, tuple},
     re_find,
     IResult,
 };
@@ -16,6 +17,28 @@ use crate::{expression::Expression, item};
 
 pub struct Program {
     pub items: Vec<item::Item>,
+}
+
+fn parse_expression(input: &str) -> IResult<&str, Expression> {
+    alt((parse_addition, parse_literal, parse_variable))(input)
+}
+
+fn parse_variable(input: &str) -> IResult<&str, Expression> {
+    map(alpha1, |name: &str| Expression::Variable(name.to_string()))(input)
+}
+
+fn parse_addition(input: &str) -> IResult<&str, Expression> {
+    map(
+        separated_pair(
+            parse_expression,
+            tuple((multispace0, one_of("+"), multispace0)),
+            parse_expression,
+        ),
+        |(left, right)| Expression::AddBinary {
+            left: Box::new(left),
+            right: Box::new(right),
+        }
+    )(input)
 }
 
 fn parse_literal(input: &str) -> IResult<&str, Expression> {
@@ -73,7 +96,7 @@ pub fn parse_program(program_text: &str) -> Program {
         }],
     };
 
-    match parse_literal(program_text) {
+    match parse_expression(program_text) {
         Ok((_, expr)) => Program {
             items: vec![item::Item {
                 pattern: item::Pattern::MatchEverything,
