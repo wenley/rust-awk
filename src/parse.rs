@@ -24,6 +24,17 @@ pub struct Program {
  * Statement Parsers
  * - - - - - - - - - - */
 
+fn parse_action(input: &str) -> IResult<&str, item::Action> {
+    map(
+        delimited(
+            tuple((one_of("{"), multispace0)),
+            parse_statements,
+            tuple((multispace0, one_of("}"))),
+        ),
+        move |statements| item::Action { statements: statements },
+    )(input)
+}
+
 fn parse_statements(input: &str) -> IResult<&str, Vec<item::Statement>> {
     let parse_single_statement = terminated(
         parse_simple_statement,
@@ -144,13 +155,11 @@ pub fn parse_program(program_text: &str) -> Program {
         }],
     };
 
-    match parse_statements(program_text) {
-        Ok((_, statements)) => Program {
+    match parse_action(program_text) {
+        Ok((_, action)) => Program {
             items: vec![item::Item {
                 pattern: item::Pattern::MatchEverything,
-                action: item::Action {
-                    statements: statements,
-                },
+                action: action,
             }],
         },
         _ => default_program,
@@ -282,10 +291,10 @@ mod tests {
     #[test]
     fn test_parse_program() {
         let program = parse_program(
-            r#"print(1);
+            r#"{ print(1);
             print(2.0);
             print("hello");
-        "#,
+        }"#,
         );
 
         assert_eq!(program.items[0].action.statements.len(), 3);
