@@ -5,6 +5,7 @@ use crate::basic_types::Record;
 
 static EMPTY_STRING: &str = "";
 
+#[derive(PartialEq, Debug)]
 pub enum Statement {
     IfElse {
         condition: Expression,

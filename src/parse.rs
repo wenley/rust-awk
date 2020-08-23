@@ -10,7 +10,7 @@ use nom::{
     combinator::{map, map_res},
     multi::{many0, many1},
     re_find,
-    sequence::{delimited, pair, preceded, terminated, tuple},
+    sequence::{delimited, pair, terminated, tuple},
     IResult,
 };
 
@@ -33,17 +33,16 @@ fn parse_statements(input: &str) -> IResult<&str, Vec<item::Statement>> {
 }
 
 fn parse_simple_statement(input: &str) -> IResult<&str, item::Statement> {
-    alt((map(parse_expression, move|expr| item::Statement::Print(expr)), parse_print_statement))(input)
+    alt((
+        parse_print_statement,
+        map(parse_expression, move |expr| item::Statement::Print(expr)),
+    ))(input)
 }
 
 fn parse_print_statement(input: &str) -> IResult<&str, item::Statement> {
     map(
-        delimited(
-            tag("print("),
-            parse_expression,
-            one_of(")")
-        ),
-        move|expr| item::Statement::Print(expr)
+        delimited(tag("print("), parse_expression, one_of(")")),
+        move |expr| item::Statement::Print(expr),
     )(input)
 }
 
@@ -119,6 +118,7 @@ fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
 }
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
+    // TODO: Allow spaces in strings
     map(
         delimited(one_of("\""), alpha1, one_of("\"")),
         |contents: &str| Expression::StringLiteral(contents.to_string()),
@@ -149,7 +149,7 @@ pub fn parse_program(program_text: &str) -> Program {
             items: vec![item::Item {
                 pattern: item::Pattern::MatchEverything,
                 action: item::Action {
-                    statements: statements
+                    statements: statements,
                 },
             }],
         },
@@ -219,6 +219,13 @@ mod tests {
             Expression::NumericLiteral(NumericValue::Integer(1))
         );
 
+        let result = parse_expression(r#""hello""#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1,
+            Expression::StringLiteral("hello".to_string()),
+        );
+
         let result = parse_expression("(1)");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
@@ -244,5 +251,43 @@ mod tests {
                 right: Box::new(Expression::NumericLiteral(NumericValue::Float(2.5))),
             }
         );
+    }
+
+    #[test]
+    fn test_parse_statements() {
+        let result = parse_print_statement(r#"print("hello")"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1,
+            item::Statement::Print(Expression::StringLiteral("hello".to_string()))
+        );
+
+        let result = parse_statements(
+            r#"print(1);
+            print(2.0);
+            print("hello");
+        "#,
+        );
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1,
+            vec![
+                item::Statement::Print(Expression::NumericLiteral(NumericValue::Integer(1))),
+                item::Statement::Print(Expression::NumericLiteral(NumericValue::Float(2.0))),
+                item::Statement::Print(Expression::StringLiteral("hello".to_string())),
+            ],
+        );
+    }
+
+    #[test]
+    fn test_parse_program() {
+        let program = parse_program(
+            r#"print(1);
+            print(2.0);
+            print("hello");
+        "#,
+        );
+
+        assert_eq!(program.items[0].action.statements.len(), 3);
     }
 }
