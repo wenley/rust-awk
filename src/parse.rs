@@ -50,14 +50,15 @@ fn parse_literal(input: &str) -> IResult<&str, Expression> {
 }
 
 fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
-    let (input, matched) = re_find!(input, r"[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?")?;
+    // Omit ? on the . to intentionally _not_ match on integers
+    let (input, matched) = re_find!(input, r"^[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?")?;
     let number = matched.parse::<f64>().unwrap();
 
     IResult::Ok((input, NumericValue::Float(number)))
 }
 
 fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
-    let (input, matched) = re_find!(input, r"[-+]?[0-9]+")?;
+    let (input, matched) = re_find!(input, r"^[-+]?[0-9]+")?;
     let number = matched.parse::<i64>().unwrap();
 
     IResult::Ok((input, NumericValue::Integer(number)))
@@ -65,7 +66,7 @@ fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
 
 fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
     map(
-        alt((parse_integer_literal, parse_float_literal)),
+        alt((parse_float_literal, parse_integer_literal)),
         |number| Expression::NumericLiteral(number),
     )(input)
 }
@@ -117,14 +118,21 @@ mod tests {
     fn parse_number_literals() {
         // Integers
         assert_eq!(
-            parse_integer_literal("123"),
-            IResult::Ok(("", NumericValue::Integer(123)))
+            parse_integer_literal("123").unwrap().1,
+            NumericValue::Integer(123)
         );
-        // Integers
         assert_eq!(
-            parse_integer_literal("123000"),
-            IResult::Ok(("", NumericValue::Integer(123000)))
+            parse_integer_literal("123000").unwrap().1,
+            NumericValue::Integer(123000)
         );
+        assert_eq!(
+            parse_integer_literal("-123").unwrap().1,
+            NumericValue::Integer(-123)
+        );
+        assert_eq!(parse_integer_literal("(123").is_err(), true);
+        // Would like this test to pass, but the distinction is implemented
+        // by the sequencing of the parsers of parse_number_literal
+        // assert_eq!(parse_integer_literal("123.45").is_err(), true);
         assert_eq!(parse_integer_literal(".").is_err(), true);
 
         // Floats
