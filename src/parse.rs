@@ -6,10 +6,10 @@ use crate::basic_types::NumericValue;
 use nom::{
     branch::alt,
     character::complete::{alpha1, multispace0, none_of, one_of},
-    combinator::{map, map_res},
+    combinator::{all_consuming, map, map_res},
     multi::many1,
     re_find,
-    sequence::{separated_pair, tuple},
+    sequence::{delimited, separated_pair, tuple},
     IResult,
 };
 
@@ -31,7 +31,7 @@ fn parse_addition(input: &str) -> IResult<&str, Expression> {
     map(
         separated_pair(
             parse_expression,
-            tuple((multispace0, one_of("+"), multispace0)),
+            delimited(multispace0, one_of("+"), multispace0),
             parse_expression,
         ),
         |(left, right)| Expression::AddBinary {
@@ -72,8 +72,8 @@ fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
     map(
-        tuple((one_of("\""), alpha1, one_of("\""))),
-        |(_, contents, _): (char, &str, char)| Expression::StringLiteral(contents.to_string()),
+        delimited(one_of("\""), alpha1, one_of("\"")),
+        |contents: &str| Expression::StringLiteral(contents.to_string()),
     )(input)
 }
 
