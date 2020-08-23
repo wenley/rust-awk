@@ -68,14 +68,22 @@ impl Expression {
 impl PartialEq for Expression {
     fn eq(&self, other: &Expression) -> bool {
         match (self, other) {
-            (Expression::StringLiteral(s1), Expression::StringLiteral(s2)) => { s1 == s2 }
-            (Expression::NumericLiteral(n1), Expression::NumericLiteral(n2)) => { n1 == n2 }
-            (Expression::Regex(r1), Expression::Regex(r2)) => { r1.as_str() == r2.as_str() }
-            (Expression::Variable(s1), Expression::Variable(s2)) => { s1 == s2 }
-            (Expression::FieldReference(s1), Expression::FieldReference(s2)) => { s1 == s2 }
-            (Expression::AddBinary { left: l1, right: r1 },
-             Expression::AddBinary { left: l2, right: r2 }) => { l1 == l2 && r1 == r2 }
-            _ => { false }
+            (Expression::StringLiteral(s1), Expression::StringLiteral(s2)) => s1 == s2,
+            (Expression::NumericLiteral(n1), Expression::NumericLiteral(n2)) => n1 == n2,
+            (Expression::Regex(r1), Expression::Regex(r2)) => r1.as_str() == r2.as_str(),
+            (Expression::Variable(s1), Expression::Variable(s2)) => s1 == s2,
+            (Expression::FieldReference(s1), Expression::FieldReference(s2)) => s1 == s2,
+            (
+                Expression::AddBinary {
+                    left: l1,
+                    right: r1,
+                },
+                Expression::AddBinary {
+                    left: l2,
+                    right: r2,
+                },
+            ) => l1 == l2 && r1 == r2,
+            _ => false,
         }
     }
 }
