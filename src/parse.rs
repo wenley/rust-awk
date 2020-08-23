@@ -108,3 +108,50 @@ pub fn parse_program(program_text: &str) -> Program {
         _ => default_program,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_number_literals() {
+        // Integers
+        assert_eq!(
+            parse_integer_literal("123"),
+            IResult::Ok(("", NumericValue::Integer(123)))
+        );
+        // Integers
+        assert_eq!(
+            parse_integer_literal("123000"),
+            IResult::Ok(("", NumericValue::Integer(123000)))
+        );
+        assert_eq!(parse_integer_literal(".").is_err(), true);
+
+        // Floats
+        assert_eq!(
+            parse_float_literal("123.45"),
+            IResult::Ok(("", NumericValue::Float(123.45)))
+        );
+        assert_eq!(
+            parse_float_literal("123.45e-5"),
+            IResult::Ok(("", NumericValue::Float(123.45e-5)))
+        );
+        assert_eq!(
+            parse_float_literal("123.45E5"),
+            IResult::Ok(("", NumericValue::Float(123.45e5)))
+        );
+        assert_eq!(
+            parse_float_literal(".45"),
+            IResult::Ok(("", NumericValue::Float(0.45)))
+        );
+        assert_eq!(
+            parse_float_literal("-123.45"),
+            IResult::Ok(("", NumericValue::Float(-123.45)))
+        );
+        assert_eq!(parse_float_literal("a").is_err(), true);
+        assert_eq!(parse_float_literal(".").is_err(), true);
+        assert_eq!(parse_float_literal("+e").is_err(), true);
+
+        // Cannot test parse_number_literal because macros don't reveal types
+    }
+}
