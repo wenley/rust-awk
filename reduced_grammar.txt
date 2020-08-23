@@ -50,11 +50,6 @@ terminatable_statement : simple_statement
                  ;
 
 
-simple_statement_opt : /* empty */
-                 | simple_statement
-                 ;
-
-
 simple_statement : Delete NAME '[' expr_list ']'
                  | expr
                  | print_statement
