@@ -11,7 +11,7 @@ pub enum Statement {
         if_branch: Box<Statement>,
         else_branch: Box<Statement>,
     },
-    Print(Expression),
+    Print(Expression), // TODO: Allow printing multiple expressions
     Assign {
         variable_name: String,
         value: Expression,

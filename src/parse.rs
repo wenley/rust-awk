@@ -5,11 +5,12 @@ use crate::basic_types::NumericValue;
 
 use nom::{
     branch::alt,
+    bytes::complete::tag,
     character::complete::{alpha1, multispace0, none_of, one_of},
     combinator::{map, map_res},
     multi::{many0, many1},
     re_find,
-    sequence::{delimited, pair, tuple},
+    sequence::{delimited, pair, preceded, terminated, tuple},
     IResult,
 };
 
@@ -17,6 +18,33 @@ use crate::{expression::Expression, item};
 
 pub struct Program {
     pub items: Vec<item::Item>,
+}
+
+/* - - - - - - - - - -
+ * Statement Parsers
+ * - - - - - - - - - - */
+
+fn parse_statements(input: &str) -> IResult<&str, Vec<item::Statement>> {
+    let parse_single_statement = terminated(
+        parse_simple_statement,
+        tuple((multispace0, one_of(";"), multispace0)),
+    );
+    many0(parse_single_statement)(input)
+}
+
+fn parse_simple_statement(input: &str) -> IResult<&str, item::Statement> {
+    alt((map(parse_expression, move|expr| item::Statement::Print(expr)), parse_print_statement))(input)
+}
+
+fn parse_print_statement(input: &str) -> IResult<&str, item::Statement> {
+    map(
+        delimited(
+            tag("print("),
+            parse_expression,
+            one_of(")")
+        ),
+        move|expr| item::Statement::Print(expr)
+    )(input)
 }
 
 /* - - - - - - - - - -
@@ -116,12 +144,12 @@ pub fn parse_program(program_text: &str) -> Program {
         }],
     };
 
-    match parse_expression(program_text) {
-        Ok((_, expr)) => Program {
+    match parse_statements(program_text) {
+        Ok((_, statements)) => Program {
             items: vec![item::Item {
                 pattern: item::Pattern::MatchEverything,
                 action: item::Action {
-                    statements: vec![item::Statement::Print(expr)],
+                    statements: statements
                 },
             }],
         },
