@@ -34,8 +34,6 @@ terminated_statement : action newline_opt
                  | If '(' expr ')' newline_opt terminated_statement
                        Else newline_opt terminated_statement
                  | While '(' expr ')' newline_opt terminated_statement
-                 | For '(' NAME In NAME ')' newline_opt
-                      terminated_statement
                  | terminator
                  | terminatable_statement ';'     newline_opt
                  ;
@@ -50,8 +48,7 @@ terminatable_statement : simple_statement
                  ;
 
 
-simple_statement : Delete NAME '[' expr_list ']'
-                 | expr
+simple_statement : expr
                  | print_statement
                  | lvalue '=' expr
                  ;
@@ -102,12 +99,10 @@ binary_expr      : expr '^' expr
                  | expr          non_unary_expr
                  | expr '˜'      expr
                  | expr NO_MATCH expr
-                 | expr In NAME
                  | expr AND newline_opt expr
                  | expr OR  newline_opt expr
                  | expr '?' expr ':' expr
                  | expr '<' expr
-                 | expr LE  expr
                  | expr LE  expr
                  | expr NE  expr
                  | expr EQ  expr
@@ -129,7 +124,6 @@ literal_expr     : NUMBER
 
 
 lvalue           : NAME
-                 | NAME '[' expr_list ']'
                  | '$' expr
                  ;
 
