@@ -4,6 +4,7 @@ pub mod item;
 pub mod parse;
 
 use basic_types::Context;
+use item::{Action, Pattern};
 
 pub struct ProgramRun<'a> {
     program: &'a parse::Program,
@@ -32,11 +33,11 @@ impl ProgramRun<'_> {
             .items
             .iter()
             .filter(|item| match item.pattern {
-                item::Pattern::Begin => true,
+                Pattern::Begin => true,
                 _ => false,
             })
             .for_each(|begin_rule| self.execute_action(&begin_rule.action));
     }
 
-    fn execute_action(&mut self, action: &item::Action) {}
+    fn execute_action(&mut self, action: &Action) {}
 }

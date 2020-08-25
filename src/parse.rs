@@ -14,55 +14,58 @@ use nom::{
     IResult,
 };
 
-use crate::{expression::Expression, item};
+use crate::{
+    expression::Expression,
+    item::{Action, Item, Pattern, Statement},
+};
 
 pub struct Program {
-    pub items: Vec<item::Item>,
+    pub items: Vec<Item>,
 }
 
 /* - - - - - - - - - -
  * Statement Parsers
  * - - - - - - - - - - */
 
-fn parse_item_list(input: &str) -> IResult<&str, Vec<item::Item>> {
+fn parse_item_list(input: &str) -> IResult<&str, Vec<Item>> {
     many1(parse_item)(input)
 }
 
-fn parse_item(input: &str) -> IResult<&str, item::Item> {
+fn parse_item(input: &str) -> IResult<&str, Item> {
     map(
         pair(parse_item_pattern, parse_action),
-        |(pattern, action)| item::Item {
+        |(pattern, action)| Item {
             pattern: pattern,
             action: action,
         },
     )(input)
 }
 
-fn parse_item_pattern(input: &str) -> IResult<&str, item::Pattern> {
+fn parse_item_pattern(input: &str) -> IResult<&str, Pattern> {
     let parse_pattern = alt((
-        map(tag("BEGIN"), |_| item::Pattern::Begin),
-        map(tag("END"), |_| item::Pattern::End),
-        map(parse_expression, |expr| item::Pattern::Expression(expr)),
+        map(tag("BEGIN"), |_| Pattern::Begin),
+        map(tag("END"), |_| Pattern::End),
+        map(parse_expression, |expr| Pattern::Expression(expr)),
     ));
     map(opt(parse_pattern), |pattern_opt| {
-        pattern_opt.unwrap_or(item::Pattern::MatchEverything)
+        pattern_opt.unwrap_or(Pattern::MatchEverything)
     })(input)
 }
 
-fn parse_action(input: &str) -> IResult<&str, item::Action> {
+fn parse_action(input: &str) -> IResult<&str, Action> {
     map(
         delimited(
             tuple((one_of("{"), multispace0)),
             parse_statements,
             tuple((multispace0, one_of("}"))),
         ),
-        move |statements| item::Action {
+        move |statements| Action {
             statements: statements,
         },
     )(input)
 }
 
-fn parse_statements(input: &str) -> IResult<&str, Vec<item::Statement>> {
+fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
     let parse_single_statement = terminated(
         parse_simple_statement,
         tuple((multispace0, one_of(";"), multispace0)),
@@ -70,17 +73,17 @@ fn parse_statements(input: &str) -> IResult<&str, Vec<item::Statement>> {
     many0(parse_single_statement)(input)
 }
 
-fn parse_simple_statement(input: &str) -> IResult<&str, item::Statement> {
+fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
     alt((
         parse_print_statement,
-        map(parse_expression, move |expr| item::Statement::Print(expr)),
+        map(parse_expression, move |expr| Statement::Print(expr)),
     ))(input)
 }
 
-fn parse_print_statement(input: &str) -> IResult<&str, item::Statement> {
+fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
     map(
         delimited(tag("print("), parse_expression, one_of(")")),
-        move |expr| item::Statement::Print(expr),
+        move |expr| Statement::Print(expr),
     )(input)
 }
 
@@ -172,10 +175,10 @@ fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
 
 pub fn parse_program(program_text: &str) -> Program {
     let default_program = Program {
-        items: vec![item::Item {
-            pattern: item::Pattern::MatchEverything,
-            action: item::Action {
-                statements: vec![item::Statement::Print(Expression::StringLiteral(
+        items: vec![Item {
+            pattern: Pattern::MatchEverything,
+            action: Action {
+                statements: vec![Statement::Print(Expression::StringLiteral(
                     "hi".to_string(),
                 ))],
             },
@@ -290,7 +293,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1,
-            item::Statement::Print(Expression::StringLiteral("hello".to_string()))
+            Statement::Print(Expression::StringLiteral("hello".to_string()))
         );
 
         let result = parse_statements(
@@ -303,9 +306,9 @@ mod tests {
         assert_eq!(
             result.unwrap().1,
             vec![
-                item::Statement::Print(Expression::NumericLiteral(NumericValue::Integer(1))),
-                item::Statement::Print(Expression::NumericLiteral(NumericValue::Float(2.0))),
-                item::Statement::Print(Expression::StringLiteral("hello".to_string())),
+                Statement::Print(Expression::NumericLiteral(NumericValue::Integer(1))),
+                Statement::Print(Expression::NumericLiteral(NumericValue::Float(2.0))),
+                Statement::Print(Expression::StringLiteral("hello".to_string())),
             ],
         );
     }
