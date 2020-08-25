@@ -40,4 +40,8 @@ impl ProgramRun<'_> {
     }
 
     fn execute_action(&mut self, action: &Action) {}
+
+    pub fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
+        self.context.split(line)
+    }
 }

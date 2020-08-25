@@ -22,7 +22,7 @@ fn main() {
                     break;
                 }
                 buffer.truncate(n - 1);
-                let fields: Vec<&str> = buffer.split_whitespace().collect();
+                let fields = run.split(&buffer);
                 let record = rust_awk::basic_types::Record {
                     full_line: &buffer,
                     fields: &fields,

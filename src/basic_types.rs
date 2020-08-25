@@ -1,3 +1,4 @@
+use regex;
 use std::collections::HashMap;
 
 pub struct Record<'a> {
@@ -63,13 +64,20 @@ impl Clone for Value {
 
 static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
 
+enum FieldSeparator {
+    Character(char),
+    Regex(regex::Regex),
+}
+
 pub struct Context {
+    field_separator: FieldSeparator,
     variables: HashMap<String, Value>,
 }
 
 impl Context {
     pub fn empty() -> Context {
         Context {
+            field_separator: FieldSeparator::Character(' '),
             variables: HashMap::new(),
         }
     }
@@ -81,8 +89,24 @@ impl Context {
             .unwrap_or(UNINITIALIZED_VALUE.clone())
     }
 
+    pub fn set_field_separator(&mut self, new_separator: &str) {
+        if new_separator.len() == 1 {
+            self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
+        } else {
+            self.field_separator = FieldSeparator::Regex(regex::Regex::new(new_separator).unwrap())
+        }
+    }
+
     pub fn assign_variable(&mut self, variable_name: &str, value: Value) {
         self.variables.insert(variable_name.to_string(), value);
+    }
+
+    pub fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
+        match &self.field_separator {
+            FieldSeparator::Character(' ') => line.split_whitespace().collect(),
+            FieldSeparator::Character(c1) => line.split(|c2| *c1 == c2).collect(),
+            FieldSeparator::Regex(re) => re.split(line).collect(),
+        }
     }
 }
 
