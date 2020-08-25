@@ -7,7 +7,7 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{alpha1, multispace0, none_of, one_of},
-    combinator::{map, map_res},
+    combinator::{map, map_res, opt},
     multi::{many0, many1},
     re_find,
     sequence::{delimited, pair, terminated, tuple},
@@ -24,6 +24,31 @@ pub struct Program {
  * Statement Parsers
  * - - - - - - - - - - */
 
+fn parse_item_list(input: &str) -> IResult<&str, Vec<item::Item>> {
+    many1(parse_item)(input)
+}
+
+fn parse_item(input: &str) -> IResult<&str, item::Item> {
+    map(
+        pair(parse_item_pattern, parse_action),
+        |(pattern, action)| item::Item {
+            pattern: pattern,
+            action: action,
+        },
+    )(input)
+}
+
+fn parse_item_pattern(input: &str) -> IResult<&str, item::Pattern> {
+    let parse_pattern = alt((
+        map(tag("BEGIN"), |_| item::Pattern::Begin),
+        map(tag("END"), |_| item::Pattern::End),
+        map(parse_expression, |expr| item::Pattern::Expression(expr)),
+    ));
+    map(opt(parse_pattern), |pattern_opt| {
+        pattern_opt.unwrap_or(item::Pattern::MatchEverything)
+    })(input)
+}
+
 fn parse_action(input: &str) -> IResult<&str, item::Action> {
     map(
         delimited(
@@ -31,7 +56,9 @@ fn parse_action(input: &str) -> IResult<&str, item::Action> {
             parse_statements,
             tuple((multispace0, one_of("}"))),
         ),
-        move |statements| item::Action { statements: statements },
+        move |statements| item::Action {
+            statements: statements,
+        },
     )(input)
 }
 
@@ -155,13 +182,8 @@ pub fn parse_program(program_text: &str) -> Program {
         }],
     };
 
-    match parse_action(program_text) {
-        Ok((_, action)) => Program {
-            items: vec![item::Item {
-                pattern: item::Pattern::MatchEverything,
-                action: action,
-            }],
-        },
+    match parse_item_list(program_text) {
+        Ok((_, items)) => Program { items: items },
         _ => default_program,
     }
 }
