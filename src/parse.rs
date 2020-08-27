@@ -4,18 +4,17 @@ extern crate regex;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, multispace0, none_of, one_of},
-    combinator::{map, map_res, opt},
+    character::complete::{multispace0, one_of},
+    combinator::{map, opt},
     multi::{many0, many1},
     sequence::{delimited, pair, terminated, tuple},
     IResult,
 };
 
 use crate::{
-    expression::Expression,
+    expression::{parse_expression, Expression},
     item::{Action, Item, Statement},
     pattern::Pattern,
-    value::{parse_float_literal, parse_integer_literal},
 };
 
 pub struct Program {
@@ -86,77 +85,6 @@ fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
     )(input)
 }
 
-/* - - - - - - - - - -
- * Expression Parsers
- * in increasing order of precedence
- * - - - - - - - - - - */
-
-fn parse_expression(input: &str) -> IResult<&str, Expression> {
-    parse_addition(input)
-}
-
-fn parse_addition(input: &str) -> IResult<&str, Expression> {
-    let parse_added_expr = map(
-        pair(
-            delimited(multispace0, one_of("+"), multispace0),
-            parse_primary,
-        ),
-        |(_, rhs)| rhs,
-    );
-    map(
-        pair(parse_primary, many0(parse_added_expr)),
-        move |(first, mut rest)| {
-            rest.drain(0..)
-                .fold(first, |inner, next| Expression::AddBinary {
-                    left: Box::new(inner),
-                    right: Box::new(next),
-                })
-        },
-    )(input)
-}
-
-fn parse_primary(input: &str) -> IResult<&str, Expression> {
-    alt((parse_literal, parse_variable, parse_parens))(input)
-}
-
-fn parse_parens(input: &str) -> IResult<&str, Expression> {
-    delimited(one_of("("), parse_expression, one_of(")"))(input)
-}
-
-fn parse_variable(input: &str) -> IResult<&str, Expression> {
-    map(alpha1, |name: &str| Expression::Variable(name.to_string()))(input)
-}
-
-fn parse_literal(input: &str) -> IResult<&str, Expression> {
-    alt((
-        parse_string_literal,
-        parse_regex_literal,
-        parse_number_literal,
-    ))(input)
-}
-
-fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
-    map(
-        alt((parse_float_literal, parse_integer_literal)),
-        |number| Expression::NumericLiteral(number),
-    )(input)
-}
-
-fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
-    // TODO: Allow spaces in strings
-    map(
-        delimited(one_of("\""), alpha1, one_of("\"")),
-        |contents: &str| Expression::StringLiteral(contents.to_string()),
-    )(input)
-}
-
-fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
-    let parser = tuple((one_of("/"), many1(none_of("/")), one_of("/")));
-    map_res(parser, |(_, vec, _)| {
-        regex::Regex::new(&vec.iter().collect::<String>()).map(|regex| Expression::Regex(regex))
-    })(input)
-}
-
 pub fn parse_program(program_text: &str) -> Program {
     let default_program = Program {
         items: vec![Item {
@@ -179,49 +107,6 @@ pub fn parse_program(program_text: &str) -> Program {
 mod tests {
     use super::*;
     use crate::value::NumericValue;
-
-    #[test]
-    fn parse_expressions() {
-        let result = parse_expression("1");
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(
-            result.unwrap().1,
-            Expression::NumericLiteral(NumericValue::Integer(1))
-        );
-
-        let result = parse_expression(r#""hello""#);
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().1,
-            Expression::StringLiteral("hello".to_string()),
-        );
-
-        let result = parse_expression("(1)");
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(
-            result.unwrap().1,
-            Expression::NumericLiteral(NumericValue::Integer(1))
-        );
-
-        let result = parse_expression("(1) + (2.5)");
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(
-            result.unwrap().1,
-            Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Float(2.5))),
-            }
-        );
-        let result = parse_expression("(1) + (2.5)");
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(
-            result.unwrap().1,
-            Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Float(2.5))),
-            }
-        );
-    }
 
     #[test]
     fn test_parse_statements() {
