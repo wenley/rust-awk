@@ -1,7 +1,15 @@
+use nom::{
+    character::complete::{multispace0, one_of},
+    combinator::map,
+    multi::many1,
+    sequence::{delimited, pair, tuple},
+    IResult,
+};
+
 use crate::{
     basic_types::{Context, Record},
-    pattern::Pattern,
-    statement::Statement,
+    pattern::{parse_item_pattern, Pattern},
+    statement::{parse_statements, Statement},
 };
 
 pub struct Action {
@@ -20,6 +28,33 @@ impl Action {
 pub struct Item {
     pub(crate) pattern: Pattern,
     pub action: Action,
+}
+
+pub(crate) fn parse_item_list(input: &str) -> IResult<&str, Vec<Item>> {
+    many1(parse_item)(input)
+}
+
+fn parse_item(input: &str) -> IResult<&str, Item> {
+    map(
+        pair(parse_item_pattern, parse_action),
+        |(pattern, action)| Item {
+            pattern: pattern,
+            action: action,
+        },
+    )(input)
+}
+
+fn parse_action(input: &str) -> IResult<&str, Action> {
+    map(
+        delimited(
+            tuple((one_of("{"), multispace0)),
+            parse_statements,
+            tuple((multispace0, one_of("}"))),
+        ),
+        move |statements| Action {
+            statements: statements,
+        },
+    )(input)
 }
 
 #[cfg(test)]
