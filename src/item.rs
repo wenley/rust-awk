@@ -1,55 +1,10 @@
 use crate::basic_types;
-use crate::expression::Expression;
 use crate::pattern::Pattern;
 
-use crate::basic_types::Record;
-
-static EMPTY_STRING: &str = "";
-
-#[derive(PartialEq, Debug)]
-pub enum Statement {
-    IfElse {
-        condition: Expression,
-        if_branch: Box<Statement>,
-        else_branch: Box<Statement>,
-    },
-    Print(Expression), // TODO: Allow printing multiple expressions
-    Assign {
-        variable_name: String,
-        value: Expression,
-    },
-}
-
-impl Statement {
-    pub fn evaluate<'a>(&self, context: &mut basic_types::Context, record: &'a Record) -> String {
-        match self {
-            Statement::Print(expression) => expression.evaluate(context, record).coerce_to_string(),
-            Statement::IfElse {
-                condition,
-                if_branch,
-                else_branch,
-            } => {
-                let result = condition.evaluate(context, record).coercion_to_boolean();
-                if result {
-                    if_branch.evaluate(context, record)
-                } else {
-                    else_branch.evaluate(context, record)
-                }
-            }
-            Statement::Assign {
-                variable_name,
-                value,
-            } => {
-                let value = value.evaluate(context, record);
-                context.assign_variable(&variable_name, value);
-                EMPTY_STRING.to_string()
-            }
-        }
-    }
-}
+use crate::statement::Statement;
 
 pub struct Action {
-    pub statements: Vec<Statement>,
+    pub(crate) statements: Vec<Statement>,
 }
 
 impl Action {
@@ -73,7 +28,11 @@ pub struct Item {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value::{NumericValue, Value};
+    use crate::{
+        basic_types::Record,
+        expression::Expression,
+        value::{NumericValue, Value},
+    };
 
     #[test]
     fn print_statement_produces_value() {

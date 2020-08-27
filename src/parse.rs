@@ -2,19 +2,18 @@ extern crate nom;
 extern crate regex;
 
 use nom::{
-    branch::alt,
-    bytes::complete::tag,
     character::complete::{multispace0, one_of},
-    combinator::{map},
-    multi::{many0, many1},
-    sequence::{delimited, pair, terminated, tuple},
+    combinator::map,
+    multi::many1,
+    sequence::{delimited, pair, tuple},
     IResult,
 };
 
 use crate::{
-    expression::{parse_expression, Expression},
-    item::{Action, Item, Statement},
-    pattern::{Pattern, parse_item_pattern},
+    expression::Expression,
+    item::{Action, Item},
+    pattern::{parse_item_pattern, Pattern},
+    statement::{parse_statements, Statement},
 };
 
 pub struct Program {
@@ -52,28 +51,6 @@ fn parse_action(input: &str) -> IResult<&str, Action> {
     )(input)
 }
 
-fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
-    let parse_single_statement = terminated(
-        parse_simple_statement,
-        tuple((multispace0, one_of(";"), multispace0)),
-    );
-    many0(parse_single_statement)(input)
-}
-
-fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
-    alt((
-        parse_print_statement,
-        map(parse_expression, move |expr| Statement::Print(expr)),
-    ))(input)
-}
-
-fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
-    map(
-        delimited(tag("print("), parse_expression, one_of(")")),
-        move |expr| Statement::Print(expr),
-    )(input)
-}
-
 pub fn parse_program(program_text: &str) -> Program {
     let default_program = Program {
         items: vec![Item {
@@ -96,32 +73,6 @@ pub fn parse_program(program_text: &str) -> Program {
 mod tests {
     use super::*;
     use crate::value::NumericValue;
-
-    #[test]
-    fn test_parse_statements() {
-        let result = parse_print_statement(r#"print("hello")"#);
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().1,
-            Statement::Print(Expression::StringLiteral("hello".to_string()))
-        );
-
-        let result = parse_statements(
-            r#"print(1);
-            print(2.0);
-            print("hello");
-        "#,
-        );
-        assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap().1,
-            vec![
-                Statement::Print(Expression::NumericLiteral(NumericValue::Integer(1))),
-                Statement::Print(Expression::NumericLiteral(NumericValue::Float(2.0))),
-                Statement::Print(Expression::StringLiteral("hello".to_string())),
-            ],
-        );
-    }
 
     #[test]
     fn test_parse_program() {

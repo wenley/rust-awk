@@ -6,7 +6,7 @@ use nom::{
 };
 
 use crate::basic_types::Record;
-use crate::expression::{Expression, parse_expression};
+use crate::expression::{parse_expression, Expression};
 
 pub(crate) enum Pattern {
     MatchEverything,
@@ -37,4 +37,3 @@ pub(crate) fn parse_item_pattern(input: &str) -> IResult<&str, Pattern> {
         pattern_opt.unwrap_or(Pattern::MatchEverything)
     })(input)
 }
-

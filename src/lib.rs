@@ -3,6 +3,7 @@ mod expression;
 pub mod item;
 pub mod parse;
 mod pattern;
+mod statement;
 mod value;
 
 use basic_types::Context;
