@@ -1,5 +1,12 @@
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    combinator::{map, opt},
+    IResult,
+};
+
 use crate::basic_types::Record;
-use crate::expression::Expression;
+use crate::expression::{Expression, parse_expression};
 
 pub(crate) enum Pattern {
     MatchEverything,
@@ -19,3 +26,15 @@ impl Pattern {
         }
     }
 }
+
+pub(crate) fn parse_item_pattern(input: &str) -> IResult<&str, Pattern> {
+    let parse_pattern = alt((
+        map(tag("BEGIN"), |_| Pattern::Begin),
+        map(tag("END"), |_| Pattern::End),
+        map(parse_expression, |expr| Pattern::Expression(expr)),
+    ));
+    map(opt(parse_pattern), |pattern_opt| {
+        pattern_opt.unwrap_or(Pattern::MatchEverything)
+    })(input)
+}
+

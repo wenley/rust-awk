@@ -5,7 +5,7 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{multispace0, one_of},
-    combinator::{map, opt},
+    combinator::{map},
     multi::{many0, many1},
     sequence::{delimited, pair, terminated, tuple},
     IResult,
@@ -14,7 +14,7 @@ use nom::{
 use crate::{
     expression::{parse_expression, Expression},
     item::{Action, Item, Statement},
-    pattern::Pattern,
+    pattern::{Pattern, parse_item_pattern},
 };
 
 pub struct Program {
@@ -37,17 +37,6 @@ fn parse_item(input: &str) -> IResult<&str, Item> {
             action: action,
         },
     )(input)
-}
-
-fn parse_item_pattern(input: &str) -> IResult<&str, Pattern> {
-    let parse_pattern = alt((
-        map(tag("BEGIN"), |_| Pattern::Begin),
-        map(tag("END"), |_| Pattern::End),
-        map(parse_expression, |expr| Pattern::Expression(expr)),
-    ));
-    map(opt(parse_pattern), |pattern_opt| {
-        pattern_opt.unwrap_or(Pattern::MatchEverything)
-    })(input)
 }
 
 fn parse_action(input: &str) -> IResult<&str, Action> {
