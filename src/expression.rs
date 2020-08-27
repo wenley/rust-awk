@@ -5,6 +5,7 @@ use nom::{
     character::complete::{alpha1, multispace0, none_of, one_of},
     combinator::{map, map_res},
     multi::{many0, many1},
+    re_find,
     sequence::{delimited, pair, tuple},
     IResult,
 };
@@ -149,11 +150,19 @@ fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
 }
 
 fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
-    // TODO: Allow spaces in strings
     map(
-        delimited(one_of("\""), alpha1, one_of("\"")),
+        delimited(one_of("\""), parse_string_contents, one_of("\"")),
         |contents: &str| Expression::StringLiteral(contents.to_string()),
     )(input)
+}
+
+fn parse_string_contents(input: &str) -> IResult<&str, &str> {
+    //
+    // Allow strings to contain sequences of:
+    // 1. Non-slash non-double-quote characters
+    // 2. Slash followed anything (including a double-quote)
+    //
+    re_find!(input, r#"^([^\\"]|\\.)*"#)
 }
 
 fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
@@ -249,11 +258,18 @@ mod tests {
             Expression::NumericLiteral(NumericValue::Integer(1))
         );
 
-        let result = parse_expression(r#""hello""#);
+        let result = parse_string_literal(r#""hello""#);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1,
             Expression::StringLiteral("hello".to_string()),
+        );
+
+        let result = parse_expression(r#""hello world""#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1,
+            Expression::StringLiteral("hello world".to_string()),
         );
 
         let result = parse_expression("(1)");
