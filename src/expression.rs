@@ -9,9 +9,10 @@ use nom::{
     IResult,
 };
 
-use super::basic_types::Context;
-use super::basic_types::Record;
-use crate::value::{parse_float_literal, parse_integer_literal, NumericValue, Value};
+use crate::{
+    basic_types::{Context, Record},
+    value::{parse_float_literal, parse_integer_literal, NumericValue, Value},
+};
 
 #[derive(Debug)]
 pub enum Expression {

@@ -5,8 +5,10 @@ use nom::{
     IResult,
 };
 
-use crate::basic_types::Record;
-use crate::expression::{parse_expression, Expression};
+use crate::{
+    basic_types::Record,
+    expression::{parse_expression, Expression},
+};
 
 pub(crate) enum Pattern {
     MatchEverything,

@@ -1,18 +1,15 @@
-use crate::basic_types;
-use crate::pattern::Pattern;
-
-use crate::statement::Statement;
+use crate::{
+    basic_types::{Context, Record},
+    pattern::Pattern,
+    statement::Statement,
+};
 
 pub struct Action {
     pub(crate) statements: Vec<Statement>,
 }
 
 impl Action {
-    pub fn output_for_line<'a>(
-        &self,
-        context: &mut basic_types::Context,
-        record: &basic_types::Record<'a>,
-    ) -> Vec<String> {
+    pub fn output_for_line<'a>(&self, context: &mut Context, record: &Record<'a>) -> Vec<String> {
         self.statements
             .iter()
             .map(|statement| statement.evaluate(context, record))
@@ -36,7 +33,7 @@ mod tests {
 
     #[test]
     fn print_statement_produces_value() {
-        let mut empty_context = basic_types::Context::empty();
+        let mut empty_context = Context::empty();
         let fields = vec![];
         let record = Record {
             full_line: "",
@@ -51,7 +48,7 @@ mod tests {
 
     #[test]
     fn if_produces_correct_value() {
-        let mut empty_context = basic_types::Context::empty();
+        let mut empty_context = Context::empty();
         let fields = vec![];
         let record = Record {
             full_line: "",
@@ -89,7 +86,7 @@ mod tests {
 
     #[test]
     fn assignment_updates_context() {
-        let mut context = basic_types::Context::empty();
+        let mut context = Context::empty();
         let fields = vec![];
         let record = Record {
             full_line: "",

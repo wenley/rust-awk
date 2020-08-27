@@ -8,10 +8,10 @@ use nom::{
     IResult,
 };
 
-use crate::basic_types;
-use crate::expression::{parse_expression, Expression};
-
-use crate::basic_types::Record;
+use crate::{
+    basic_types::{Context, Record},
+    expression::{parse_expression, Expression},
+};
 
 static EMPTY_STRING: &str = "";
 
@@ -30,7 +30,7 @@ pub(crate) enum Statement {
 }
 
 impl Statement {
-    pub fn evaluate<'a>(&self, context: &mut basic_types::Context, record: &'a Record) -> String {
+    pub fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> String {
         match self {
             Statement::Print(expression) => expression.evaluate(context, record).coerce_to_string(),
             Statement::IfElse {
