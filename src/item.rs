@@ -1,5 +1,6 @@
 use crate::basic_types;
 use crate::expression::Expression;
+use crate::pattern::Pattern;
 
 use crate::basic_types::Record;
 
@@ -64,27 +65,8 @@ impl Action {
     }
 }
 
-pub enum Pattern {
-    MatchEverything,
-    Expression(Expression),
-    Begin,
-    End,
-}
-
-impl Pattern {
-    pub fn matches<'a>(&self, _record: &basic_types::Record<'a>) -> bool {
-        match self {
-            Pattern::MatchEverything => true,
-            // TODO: Make this proper
-            Pattern::Expression(_) => true,
-            Pattern::Begin => false,
-            Pattern::End => false,
-        }
-    }
-}
-
 pub struct Item {
-    pub pattern: Pattern,
+    pub(crate) pattern: Pattern,
     pub action: Action,
 }
 

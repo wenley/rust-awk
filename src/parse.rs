@@ -13,7 +13,8 @@ use nom::{
 
 use crate::{
     expression::Expression,
-    item::{Action, Item, Pattern, Statement},
+    item::{Action, Item, Statement},
+    pattern::Pattern,
     value::{parse_float_literal, parse_integer_literal},
 };
 
