@@ -91,6 +91,7 @@ pub struct Item {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::value::{NumericValue, Value};
 
     #[test]
     fn print_statement_produces_value() {
@@ -157,18 +158,14 @@ mod tests {
         let assign = Statement::Assign {
             variable_name: "foo".to_string(),
             value: Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(
-                    basic_types::NumericValue::Integer(1),
-                )),
-                right: Box::new(Expression::NumericLiteral(
-                    basic_types::NumericValue::Integer(2),
-                )),
+                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
+                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
             },
         };
         assign.evaluate(&mut context, &record);
         assert_eq!(
             context.fetch_variable("foo"),
-            basic_types::Value::Numeric(basic_types::NumericValue::Integer(3)),
+            Value::Numeric(NumericValue::Integer(3)),
         );
     }
 }

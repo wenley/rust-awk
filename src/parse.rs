@@ -1,7 +1,7 @@
 extern crate nom;
 extern crate regex;
 
-use crate::basic_types::NumericValue;
+use crate::value::NumericValue;
 
 use nom::{
     branch::alt,

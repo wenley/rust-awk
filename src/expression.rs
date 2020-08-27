@@ -1,9 +1,8 @@
 use regex::Regex;
 
 use super::basic_types::Context;
-use super::basic_types::NumericValue;
 use super::basic_types::Record;
-use super::basic_types::Value;
+use crate::value::{NumericValue, Value};
 
 #[derive(Debug)]
 pub enum Expression {

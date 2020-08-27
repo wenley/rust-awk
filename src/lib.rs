@@ -2,6 +2,7 @@ pub mod basic_types;
 mod expression;
 pub mod item;
 pub mod parse;
+mod value;
 
 use basic_types::Context;
 use item::{Action, Pattern};
