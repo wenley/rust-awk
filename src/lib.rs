@@ -25,9 +25,9 @@ pub fn parse_program(program_text: &str) -> Program {
         items: vec![Item {
             pattern: Pattern::MatchEverything,
             action: Action {
-                statements: vec![Statement::Print(Expression::StringLiteral(
+                statements: vec![Statement::Print(vec![Expression::StringLiteral(
                     "hi".to_string(),
-                ))],
+                )])],
             },
         }],
     };

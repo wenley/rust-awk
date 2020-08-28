@@ -74,7 +74,8 @@ mod tests {
             full_line: "",
             fields: &fields,
         };
-        let print_statement = Statement::Print(Expression::StringLiteral("hello".to_string()));
+        let print_statement =
+            Statement::Print(vec![Expression::StringLiteral("hello".to_string())]);
         assert_eq!(
             print_statement.evaluate(&mut empty_context, &record),
             "hello",
@@ -92,12 +93,12 @@ mod tests {
 
         let if_conditional = Statement::IfElse {
             condition: Expression::StringLiteral("not empty".to_string()),
-            if_branch: Box::new(Statement::Print(Expression::StringLiteral(
+            if_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
                 "if-branch".to_string(),
-            ))),
-            else_branch: Box::new(Statement::Print(Expression::StringLiteral(
+            )])),
+            else_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
                 "else".to_string(),
-            ))),
+            )])),
         };
         assert_eq!(
             if_conditional.evaluate(&mut empty_context, &record),
@@ -106,12 +107,12 @@ mod tests {
 
         let else_conditional = Statement::IfElse {
             condition: Expression::StringLiteral("".to_string()),
-            if_branch: Box::new(Statement::Print(Expression::StringLiteral(
+            if_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
                 "if-branch".to_string(),
-            ))),
-            else_branch: Box::new(Statement::Print(Expression::StringLiteral(
+            )])),
+            else_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
                 "else".to_string(),
-            ))),
+            )])),
         };
         assert_eq!(
             else_conditional.evaluate(&mut empty_context, &record),

@@ -3,7 +3,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::{multispace0, one_of},
     combinator::map,
-    multi::many0,
+    multi::{many0, separated_list},
     sequence::{delimited, terminated, tuple},
     IResult,
 };
@@ -22,7 +22,7 @@ pub(crate) enum Statement {
         if_branch: Box<Statement>,
         else_branch: Box<Statement>,
     },
-    Print(Expression), // TODO: Allow printing multiple expressions
+    Print(Vec<Expression>),
     Assign {
         variable_name: String,
         value: Expression,
@@ -32,7 +32,11 @@ pub(crate) enum Statement {
 impl Statement {
     pub fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> String {
         match self {
-            Statement::Print(expression) => expression.evaluate(context, record).coerce_to_string(),
+            Statement::Print(expressions) => expressions
+                .iter()
+                .map(|e| e.evaluate(context, record).coerce_to_string())
+                .collect::<Vec<String>>()
+                .join(" "),
             Statement::IfElse {
                 condition,
                 if_branch,
@@ -68,14 +72,16 @@ pub(crate) fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
 fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
     alt((
         parse_print_statement,
-        map(parse_expression, move |expr| Statement::Print(expr)),
+        map(parse_expression, move |expr| Statement::Print(vec![expr])),
     ))(input)
 }
 
 fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
+    let parse_separator = delimited(multispace0, one_of(","), multispace0);
+    let parse_expression_list = separated_list(parse_separator, parse_expression);
     map(
-        delimited(tag("print("), parse_expression, one_of(")")),
-        move |expr| Statement::Print(expr),
+        delimited(tag("print("), parse_expression_list, one_of(")")),
+        move |exprs| Statement::Print(exprs),
     )(input)
 }
 
@@ -90,12 +96,12 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1,
-            Statement::Print(Expression::StringLiteral("hello".to_string()))
+            Statement::Print(vec![Expression::StringLiteral("hello".to_string())])
         );
 
         let result = parse_statements(
             r#"print(1);
-            print(2.0);
+            print(2.0   ,    "extra arg");
             print("hello");
         "#,
         );
@@ -103,9 +109,12 @@ mod tests {
         assert_eq!(
             result.unwrap().1,
             vec![
-                Statement::Print(Expression::NumericLiteral(NumericValue::Integer(1))),
-                Statement::Print(Expression::NumericLiteral(NumericValue::Float(2.0))),
-                Statement::Print(Expression::StringLiteral("hello".to_string())),
+                Statement::Print(vec![Expression::NumericLiteral(NumericValue::Integer(1))]),
+                Statement::Print(vec![
+                    Expression::NumericLiteral(NumericValue::Float(2.0)),
+                    Expression::StringLiteral("extra arg".to_string()),
+                ]),
+                Statement::Print(vec![Expression::StringLiteral("hello".to_string())]),
             ],
         );
     }
