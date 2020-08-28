@@ -27,6 +27,10 @@ pub(crate) enum Statement {
         variable_name: String,
         value: Expression,
     },
+    While {
+        condition: Expression,
+        body: Box<Statement>, // TODO: This should be an Action
+    },
 }
 
 impl Statement {
@@ -55,6 +59,20 @@ impl Statement {
             } => {
                 let value = value.evaluate(context, record);
                 context.assign_variable(&variable_name, value);
+                EMPTY_STRING.to_string()
+            }
+            Statement::While { condition, body } => {
+                let mut value = condition.evaluate(context, record);
+                loop {
+                    if value.coercion_to_boolean() {
+                        let _maybe_string_to_print = body.evaluate(context, record);
+                        value = condition.evaluate(context, record);
+                    } else {
+                        break;
+                    }
+                }
+                // TODO: This should return a vec![] of strings, to be combined
+                // with at the Action level
                 EMPTY_STRING.to_string()
             }
         }
@@ -123,6 +141,36 @@ fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
     )(input)
 }
 
+fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
+    let parse_while_condition_open = tuple((tag("while"), multispace0, one_of("("), multispace0));
+    let parse_while_condition_close = tuple((
+        multispace0,
+        one_of(")"),
+        multispace0,
+        one_of("{"),
+        multispace0,
+    ));
+    let parse_while_condition = delimited(
+        parse_while_condition_open,
+        parse_expression,
+        parse_while_condition_close,
+    );
+
+    let parse_while_close = pair(multispace0, one_of("}"));
+
+    map(
+        tuple((
+            parse_while_condition,
+            parse_simple_statement,
+            parse_while_close,
+        )),
+        move |(condition, body, _)| Statement::While {
+            condition: condition,
+            body: Box::new(body),
+        },
+    )(input)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -176,6 +224,27 @@ mod tests {
                 )])),
                 else_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
                     "noop".to_string()
+                )])),
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_while_statement() {
+        // This test is "not correct" because the body is currently
+        // parsed as a single statement, rather than as a full Action
+        let result = parse_while_statement(
+            r#"while (0) {
+                print("hello")
+            }"#,
+        );
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1,
+            Statement::While {
+                condition: Expression::NumericLiteral(NumericValue::Integer(0)),
+                body: Box::new(Statement::Print(vec![Expression::StringLiteral(
+                    "hello".to_string()
                 )])),
             },
         );
