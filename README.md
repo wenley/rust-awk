@@ -67,7 +67,7 @@ There isn't much surprising here, but for completeness
 
 ### Parsing
 
-Parsing is done using [Nom](https://docs.rs/nom/5.1.2/nom/) and the standard patterns thereof. Since Nom spits out string slices, the copy of the full program string is stored in the program itself to make the lifetimes simpler without needing to make copies of all the String literals.
+Parsing is done using [Nom](https://docs.rs/nom/5.1.2/nom/) and the standard patterns thereof. String literals are stored as separate, owned copies of the original program string for simplicity.
 
 Expressions were the trickiest to parse due to their self-referential recursive nature. Parsing expressions was the trickiest bit for someone who hasn't written a parser before (read: me), since the naive solution easily leads to infinite recursion in parsing. [This blog post](https://craftinginterpreters.com/parsing-expressions.html) was the most helpful at solving this problem.
 
