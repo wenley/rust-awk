@@ -1,20 +1,20 @@
 use nom::{re_find, IResult};
 
 #[derive(PartialEq, Debug, Copy, Clone)]
-pub enum NumericValue {
+pub(crate) enum NumericValue {
     Integer(i64),
     Float(f64),
 }
 
 #[derive(PartialEq, Debug)]
-pub enum Value {
+pub(crate) enum Value {
     String(String),
     Numeric(NumericValue),
     Uninitialized,
 }
 
 impl Value {
-    pub fn coerce_to_string(&self) -> String {
+    pub(crate) fn coerce_to_string(&self) -> String {
         match self {
             Value::String(string) => string.clone(),
             Value::Numeric(NumericValue::Integer(i)) => i.to_string(),
@@ -23,7 +23,7 @@ impl Value {
         }
     }
 
-    pub fn coerce_to_numeric(&self) -> NumericValue {
+    pub(crate) fn coerce_to_numeric(&self) -> NumericValue {
         match self {
             Value::Numeric(n) => *n,
             Value::String(_) => panic!("Haven't implemented string to integer coercion"),
@@ -31,7 +31,7 @@ impl Value {
         }
     }
 
-    pub fn coercion_to_boolean(&self) -> bool {
+    pub(crate) fn coercion_to_boolean(&self) -> bool {
         match self {
             Value::String(s) => match s.as_str() {
                 "" => false,

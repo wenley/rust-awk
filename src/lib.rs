@@ -2,19 +2,19 @@ extern crate nom;
 extern crate regex;
 
 mod action;
-pub mod basic_types;
+mod basic_types;
 mod expression;
-pub mod item;
+mod item;
 mod pattern;
 mod value;
 
 use crate::{
-    basic_types::Context,
+    basic_types::{Context, Record},
     item::{parse_item_list, Item},
 };
 
 pub struct Program {
-    pub items: Vec<Item>,
+    items: Vec<Item>,
 }
 
 pub fn parse_program(program_text: &str) -> Program {
@@ -37,11 +37,16 @@ pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
 }
 
 impl ProgramRun<'_> {
-    pub fn output_for_line<'a>(&mut self, record: &basic_types::Record<'a>) -> Vec<String> {
+    pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
+        let record = Record {
+            full_line: line,
+            fields: &self.split(line),
+        };
+
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_line(&mut self.context, record))
+            .flat_map(|item| item.output_for_line(&mut self.context, &record))
             .collect()
     }
 
@@ -53,7 +58,7 @@ impl ProgramRun<'_> {
             .collect()
     }
 
-    pub fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
+    fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
         self.context.split(line)
     }
 }

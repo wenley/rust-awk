@@ -6,13 +6,17 @@ use crate::{
     pattern::{parse_item_pattern, Pattern},
 };
 
-pub struct Item {
+pub(crate) struct Item {
     pattern: Pattern,
     action: Action,
 }
 
 impl Item {
-    pub fn output_for_line<'a>(&self, context: &mut Context, record: &Record<'a>) -> Vec<String> {
+    pub(crate) fn output_for_line<'a>(
+        &self,
+        context: &mut Context,
+        record: &Record<'a>,
+    ) -> Vec<String> {
         if self.pattern.matches(record) {
             self.action.output_for_line(context, record)
         } else {
@@ -20,7 +24,7 @@ impl Item {
         }
     }
 
-    pub fn output_for_begin(&self, context: &mut Context) -> Vec<String> {
+    pub(crate) fn output_for_begin(&self, context: &mut Context) -> Vec<String> {
         if let Pattern::Begin = self.pattern {
             let empty_fields = vec![];
             let empty_record = Record {
@@ -80,25 +84,33 @@ mod tests {
             fields: &fields,
         };
 
-        let if_conditional = parse_action(r#"{
+        let if_conditional = parse_action(
+            r#"{
             if ("not empty") {
                 print("if-branch");
             } else {
                 print("else");
             };
-        }"#).unwrap().1;
+        }"#,
+        )
+        .unwrap()
+        .1;
         assert_eq!(
             if_conditional.output_for_line(&mut empty_context, &record),
             vec!["if-branch"],
         );
 
-        let else_conditional = parse_action(r#"{
+        let else_conditional = parse_action(
+            r#"{
             if ("") {
                 print("if-branch");
             } else {
                 print("else");
             };
-        }"#).unwrap().1;
+        }"#,
+        )
+        .unwrap()
+        .1;
         assert_eq!(
             else_conditional.output_for_line(&mut empty_context, &record),
             vec!["else"],
@@ -114,9 +126,13 @@ mod tests {
             fields: &fields,
         };
 
-        let assign_action = parse_action(r#"{
+        let assign_action = parse_action(
+            r#"{
             foo = 1 + 2;
-        }"#).unwrap().1;
+        }"#,
+        )
+        .unwrap()
+        .1;
         assign_action.output_for_line(&mut context, &record);
         assert_eq!(
             context.fetch_variable("foo"),

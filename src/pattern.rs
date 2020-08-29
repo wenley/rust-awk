@@ -18,7 +18,7 @@ pub(crate) enum Pattern {
 }
 
 impl Pattern {
-    pub fn matches<'a>(&self, _record: &Record<'a>) -> bool {
+    pub(crate) fn matches<'a>(&self, _record: &Record<'a>) -> bool {
         match self {
             Pattern::MatchEverything => true,
             // TODO: Make this proper

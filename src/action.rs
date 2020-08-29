@@ -19,7 +19,11 @@ pub(crate) struct Action {
 }
 
 impl Action {
-    pub fn output_for_line<'a>(&self, context: &mut Context, record: &Record<'a>) -> Vec<String> {
+    pub(crate) fn output_for_line<'a>(
+        &self,
+        context: &mut Context,
+        record: &Record<'a>,
+    ) -> Vec<String> {
         self.statements
             .iter()
             .flat_map(|statement| statement.evaluate(context, record))
@@ -59,7 +63,7 @@ enum Statement {
 }
 
 impl Statement {
-    pub fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> Vec<String> {
+    fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> Vec<String> {
         match self {
             Statement::Print(expressions) => {
                 let output_line = expressions

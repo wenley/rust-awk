@@ -24,12 +24,7 @@ fn main() {
                     break;
                 }
                 buffer.truncate(n - 1);
-                let fields = run.split(&buffer);
-                let record = rust_awk::basic_types::Record {
-                    full_line: &buffer,
-                    fields: &fields,
-                };
-                for line in run.output_for_line(&record) {
+                for line in run.output_for_line(&buffer) {
                     println!("{}", line);
                 }
                 buffer.clear();

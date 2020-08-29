@@ -2,9 +2,9 @@ use crate::value::Value;
 use regex;
 use std::collections::HashMap;
 
-pub struct Record<'a> {
-    pub full_line: &'a str,
-    pub fields: &'a Vec<&'a str>,
+pub(crate) struct Record<'a> {
+    pub(crate) full_line: &'a str,
+    pub(crate) fields: &'a Vec<&'a str>,
 }
 
 static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
@@ -14,27 +14,27 @@ enum FieldSeparator {
     Regex(regex::Regex),
 }
 
-pub struct Context {
+pub(crate) struct Context {
     field_separator: FieldSeparator,
     variables: HashMap<String, Value>,
 }
 
 impl Context {
-    pub fn empty() -> Context {
+    pub(crate) fn empty() -> Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
             variables: HashMap::new(),
         }
     }
 
-    pub fn fetch_variable(&self, variable_name: &str) -> Value {
+    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
         self.variables
             .get(variable_name)
             .map(|val| val.clone())
             .unwrap_or(UNINITIALIZED_VALUE.clone())
     }
 
-    pub fn set_field_separator(&mut self, new_separator: &str) {
+    pub(crate) fn set_field_separator(&mut self, new_separator: &str) {
         if new_separator.len() == 1 {
             self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
         } else {
@@ -42,11 +42,11 @@ impl Context {
         }
     }
 
-    pub fn assign_variable(&mut self, variable_name: &str, value: Value) {
+    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
         self.variables.insert(variable_name.to_string(), value);
     }
 
-    pub fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
+    pub(super) fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
         match &self.field_separator {
             FieldSeparator::Character(' ') => line.split_whitespace().collect(),
             FieldSeparator::Character(c1) => line.split(|c2| *c1 == c2).collect(),

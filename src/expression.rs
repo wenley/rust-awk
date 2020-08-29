@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub enum Expression {
+pub(crate) enum Expression {
     StringLiteral(String),
     NumericLiteral(NumericValue),
     AddBinary {
@@ -29,7 +29,7 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
+    pub(crate) fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
         match self {
             Expression::StringLiteral(string) => Value::String(string.clone()),
             Expression::NumericLiteral(numeric) => Value::Numeric(numeric.clone()),
