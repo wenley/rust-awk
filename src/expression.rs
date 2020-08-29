@@ -6,7 +6,7 @@ use nom::{
     combinator::{map, map_res},
     multi::{many0, many1},
     re_find,
-    sequence::{delimited, pair, tuple},
+    sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
 
@@ -123,7 +123,12 @@ fn parse_addition(input: &str) -> IResult<&str, Expression> {
 }
 
 fn parse_primary(input: &str) -> IResult<&str, Expression> {
-    alt((parse_literal, parse_variable, parse_parens))(input)
+    alt((
+        parse_literal,
+        parse_variable,
+        parse_parens,
+        parse_field_reference,
+    ))(input)
 }
 
 fn parse_parens(input: &str) -> IResult<&str, Expression> {
@@ -169,6 +174,12 @@ fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
     let parser = tuple((one_of("/"), many1(none_of("/")), one_of("/")));
     map_res(parser, |(_, vec, _)| {
         regex::Regex::new(&vec.iter().collect::<String>()).map(|regex| Expression::Regex(regex))
+    })(input)
+}
+
+fn parse_field_reference(input: &str) -> IResult<&str, Expression> {
+    map(preceded(one_of("$"), parse_expression), |expr| {
+        Expression::FieldReference(Box::new(expr))
     })(input)
 }
 
@@ -296,6 +307,18 @@ mod tests {
                 left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
                 right: Box::new(Expression::NumericLiteral(NumericValue::Float(2.5))),
             }
+        );
+    }
+
+    #[test]
+    fn test_parse_field_reference() {
+        let result = parse_expression("$1");
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(
+            result.unwrap().1,
+            Expression::FieldReference(Box::new(Expression::NumericLiteral(
+                NumericValue::Integer(1)
+            )),),
         );
     }
 }
