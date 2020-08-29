@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{multispace0, one_of},
+    character::complete::{alpha1, multispace0, one_of},
     combinator::map,
     multi::{many0, separated_list},
     sequence::{delimited, terminated, tuple},
@@ -119,6 +119,7 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
         parse_print_statement,
         parse_if_else_statement,
         parse_while_statement,
+        parse_assign_statement,
         map(parse_expression, move |expr| Statement::Print(vec![expr])),
     ))(input)
 }
@@ -162,6 +163,22 @@ fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
         move |(condition, body)| Statement::While {
             condition: condition,
             body: body,
+        },
+    )(input)
+}
+
+fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
+    map(
+        tuple((
+            alpha1,
+            multispace0,
+            one_of("="),
+            multispace0,
+            parse_expression,
+        )),
+        |(variable_name, _, _, _, value_expression)| Statement::Assign {
+            variable_name: variable_name.to_string(),
+            value: value_expression,
         },
     )(input)
 }
@@ -239,6 +256,19 @@ mod tests {
                         "hello".to_string()
                     )])],
                 },
+            },
+        );
+    }
+
+    #[test]
+    fn test_parse_assign_statement() {
+        let result = parse_simple_statement(r#"variable = "hi""#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1,
+            Statement::Assign {
+                variable_name: "variable".to_string(),
+                value: Expression::StringLiteral("hi".to_string()),
             },
         );
     }
