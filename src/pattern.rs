@@ -6,7 +6,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::Record,
+    basic_types::{Context, Record},
     expression::{parse_expression, Expression},
 };
 
@@ -18,11 +18,10 @@ pub(crate) enum Pattern {
 }
 
 impl Pattern {
-    pub(crate) fn matches<'a>(&self, _record: &Record<'a>) -> bool {
+    pub(crate) fn matches<'a>(&self, context: &mut Context, record: &Record<'a>) -> bool {
         match self {
             Pattern::MatchEverything => true,
-            // TODO: Make this proper
-            Pattern::Expression(_) => true,
+            Pattern::Expression(expression) => expression.evaluate(context, record).coercion_to_boolean(),
             Pattern::Begin => false,
             Pattern::End => false,
         }
