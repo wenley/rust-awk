@@ -4,7 +4,7 @@ use nom::{
     character::complete::{multispace0, one_of},
     combinator::map,
     multi::{many0, separated_list},
-    sequence::{delimited, pair, terminated, tuple},
+    sequence::{delimited, terminated, tuple},
     IResult,
 };
 
@@ -13,14 +13,12 @@ use crate::{
     expression::{parse_expression, Expression},
 };
 
-static EMPTY_STRING: &str = "";
-
 #[derive(PartialEq, Debug)]
 pub(crate) enum Statement {
     IfElse {
         condition: Expression,
-        if_branch: Box<Statement>,   // TODO: This should be an Action
-        else_branch: Box<Statement>, // TODO: This should be an Action
+        if_branch: Action,
+        else_branch: Action,
     },
     Print(Vec<Expression>),
     Assign {
@@ -29,18 +27,21 @@ pub(crate) enum Statement {
     },
     While {
         condition: Expression,
-        body: Box<Statement>, // TODO: This should be an Action
+        body: Action,
     },
 }
 
 impl Statement {
-    pub fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> String {
+    pub fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> Vec<String> {
         match self {
-            Statement::Print(expressions) => expressions
-                .iter()
-                .map(|e| e.evaluate(context, record).coerce_to_string())
-                .collect::<Vec<String>>()
-                .join(" "),
+            Statement::Print(expressions) => {
+                let output_line = expressions
+                    .iter()
+                    .map(|e| e.evaluate(context, record).coerce_to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ");
+                vec![output_line]
+            }
             Statement::IfElse {
                 condition,
                 if_branch,
@@ -48,9 +49,9 @@ impl Statement {
             } => {
                 let result = condition.evaluate(context, record).coercion_to_boolean();
                 if result {
-                    if_branch.evaluate(context, record)
+                    if_branch.output_for_line(context, record)
                 } else {
-                    else_branch.evaluate(context, record)
+                    else_branch.output_for_line(context, record)
                 }
             }
             Statement::Assign {
@@ -59,26 +60,26 @@ impl Statement {
             } => {
                 let value = value.evaluate(context, record);
                 context.assign_variable(&variable_name, value);
-                EMPTY_STRING.to_string()
+                vec![]
             }
             Statement::While { condition, body } => {
                 let mut value = condition.evaluate(context, record);
+                let mut output = vec![];
                 loop {
                     if value.coercion_to_boolean() {
-                        let _maybe_string_to_print = body.evaluate(context, record);
+                        output.append(&mut body.output_for_line(context, record));
                         value = condition.evaluate(context, record);
                     } else {
                         break;
                     }
                 }
-                // TODO: This should return a vec![] of strings, to be combined
-                // with at the Action level
-                EMPTY_STRING.to_string()
+                output
             }
         }
     }
 }
 
+#[derive(PartialEq, Debug)]
 pub struct Action {
     pub(crate) statements: Vec<Statement>,
 }
@@ -87,7 +88,7 @@ impl Action {
     pub fn output_for_line<'a>(&self, context: &mut Context, record: &Record<'a>) -> Vec<String> {
         self.statements
             .iter()
-            .map(|statement| statement.evaluate(context, record))
+            .flat_map(|statement| statement.evaluate(context, record))
             .collect()
     }
 }
@@ -132,67 +133,34 @@ fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
 
 fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
     let parse_if_open = tuple((tag("if"), multispace0, one_of("("), multispace0));
-    let parse_if_close = tuple((
-        multispace0,
-        one_of(")"),
-        multispace0,
-        one_of("{"),
-        multispace0,
-    ));
-    let parse_else_open = tuple((
-        multispace0,
-        one_of("}"),
-        multispace0,
-        tag("else"),
-        multispace0,
-        one_of("{"),
-        multispace0,
-    ));
-    let parse_else_close = pair(multispace0, one_of("}"));
+    let parse_if_close = tuple((multispace0, one_of(")"), multispace0));
+    let parse_else_open = tuple((multispace0, tag("else"), multispace0));
     let parse_if = delimited(parse_if_open, parse_expression, parse_if_close);
 
     map(
-        tuple((
-            parse_if,
-            parse_simple_statement,
-            parse_else_open,
-            parse_simple_statement,
-            parse_else_close,
-        )),
-        move |(condition, if_branch, _, else_branch, _)| Statement::IfElse {
+        tuple((parse_if, parse_action, parse_else_open, parse_action)),
+        move |(condition, if_branch, _, else_branch)| Statement::IfElse {
             condition: condition,
-            if_branch: Box::new(if_branch),
-            else_branch: Box::new(else_branch),
+            if_branch: if_branch,
+            else_branch: else_branch,
         },
     )(input)
 }
 
 fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
     let parse_while_condition_open = tuple((tag("while"), multispace0, one_of("("), multispace0));
-    let parse_while_condition_close = tuple((
-        multispace0,
-        one_of(")"),
-        multispace0,
-        one_of("{"),
-        multispace0,
-    ));
+    let parse_while_condition_close = tuple((multispace0, one_of(")"), multispace0));
     let parse_while_condition = delimited(
         parse_while_condition_open,
         parse_expression,
         parse_while_condition_close,
     );
 
-    let parse_while_close = pair(multispace0, one_of("}"));
-
     map(
-        tuple((
-            parse_while_condition,
-            parse_simple_statement,
-            parse_while_close,
-        )),
-        move |(condition, body, _)| Statement::While {
+        tuple((parse_while_condition, parse_action)),
+        move |(condition, body)| Statement::While {
             condition: condition,
-            body: Box::new(body),
+            body: body,
         },
     )(input)
 }

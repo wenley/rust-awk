@@ -1,9 +1,4 @@
-use nom::{
-    combinator::map,
-    multi::many1,
-    sequence::pair,
-    IResult,
-};
+use nom::{combinator::map, multi::many1, sequence::pair, IResult};
 
 use crate::{
     pattern::{parse_item_pattern, Pattern},
