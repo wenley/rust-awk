@@ -79,6 +79,32 @@ impl Statement {
     }
 }
 
+pub struct Action {
+    pub(crate) statements: Vec<Statement>,
+}
+
+impl Action {
+    pub fn output_for_line<'a>(&self, context: &mut Context, record: &Record<'a>) -> Vec<String> {
+        self.statements
+            .iter()
+            .map(|statement| statement.evaluate(context, record))
+            .collect()
+    }
+}
+
+pub(crate) fn parse_action(input: &str) -> IResult<&str, Action> {
+    map(
+        delimited(
+            tuple((one_of("{"), multispace0)),
+            parse_statements,
+            tuple((multispace0, one_of("}"))),
+        ),
+        move |statements| Action {
+            statements: statements,
+        },
+    )(input)
+}
+
 pub(crate) fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
     let parse_single_statement = terminated(
         parse_simple_statement,

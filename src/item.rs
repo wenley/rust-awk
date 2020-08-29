@@ -1,29 +1,14 @@
 use nom::{
-    character::complete::{multispace0, one_of},
     combinator::map,
     multi::many1,
-    sequence::{delimited, pair, tuple},
+    sequence::pair,
     IResult,
 };
 
 use crate::{
-    basic_types::{Context, Record},
     pattern::{parse_item_pattern, Pattern},
-    statement::{parse_statements, Statement},
+    statement::{parse_action, Action},
 };
-
-pub struct Action {
-    pub(crate) statements: Vec<Statement>,
-}
-
-impl Action {
-    pub fn output_for_line<'a>(&self, context: &mut Context, record: &Record<'a>) -> Vec<String> {
-        self.statements
-            .iter()
-            .map(|statement| statement.evaluate(context, record))
-            .collect()
-    }
-}
 
 pub struct Item {
     pub(crate) pattern: Pattern,
@@ -40,19 +25,6 @@ fn parse_item(input: &str) -> IResult<&str, Item> {
         |(pattern, action)| Item {
             pattern: pattern,
             action: action,
-        },
-    )(input)
-}
-
-fn parse_action(input: &str) -> IResult<&str, Action> {
-    map(
-        delimited(
-            tuple((one_of("{"), multispace0)),
-            parse_statements,
-            tuple((multispace0, one_of("}"))),
-        ),
-        move |statements| Action {
-            statements: statements,
         },
     )(input)
 }
