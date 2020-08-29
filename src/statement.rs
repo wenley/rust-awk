@@ -106,7 +106,7 @@ pub(crate) fn parse_action(input: &str) -> IResult<&str, Action> {
     )(input)
 }
 
-pub(crate) fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
+fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
     let parse_single_statement = terminated(
         parse_simple_statement,
         tuple((multispace0, one_of(";"), multispace0)),
@@ -205,20 +205,20 @@ mod tests {
         // parsed as single statements, rather than as a full Action
         let result = parse_simple_statement(
             r#"if (1) {
-            print("hello")
-        } else { "noop" }"#,
+            print("hello");
+        } else {}"#,
         );
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1,
             Statement::IfElse {
                 condition: Expression::NumericLiteral(NumericValue::Integer(1)),
-                if_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
-                    "hello".to_string()
-                )])),
-                else_branch: Box::new(Statement::Print(vec![Expression::StringLiteral(
-                    "noop".to_string()
-                )])),
+                if_branch: Action {
+                    statements: vec![Statement::Print(vec![Expression::StringLiteral(
+                        "hello".to_string()
+                    )])],
+                },
+                else_branch: Action { statements: vec![] },
             },
         );
     }
@@ -229,7 +229,7 @@ mod tests {
         // parsed as a single statement, rather than as a full Action
         let result = parse_while_statement(
             r#"while (0) {
-                print("hello")
+                print("hello");
             }"#,
         );
         assert!(result.is_ok());
@@ -237,9 +237,11 @@ mod tests {
             result.unwrap().1,
             Statement::While {
                 condition: Expression::NumericLiteral(NumericValue::Integer(0)),
-                body: Box::new(Statement::Print(vec![Expression::StringLiteral(
-                    "hello".to_string()
-                )])),
+                body: Action {
+                    statements: vec![Statement::Print(vec![Expression::StringLiteral(
+                        "hello".to_string()
+                    )])],
+                },
             },
         );
     }

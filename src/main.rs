@@ -10,7 +10,9 @@ fn main() {
     println!("Hello, world!");
     println!("args = {:?}", args);
 
-    run.execute_begin();
+    run.output_for_begin_items()
+        .iter()
+        .for_each(|line| println!("{}", line));
 
     let stdin = io::stdin();
 
