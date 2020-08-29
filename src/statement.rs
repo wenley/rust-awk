@@ -118,6 +118,7 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
     alt((
         parse_print_statement,
         parse_if_else_statement,
+        parse_while_statement,
         map(parse_expression, move |expr| Statement::Print(vec![expr])),
     ))(input)
 }
@@ -201,8 +202,6 @@ mod tests {
 
     #[test]
     fn test_parse_if_else_statement() {
-        // This test is "not correct" because the if and else branches are currently
-        // parsed as single statements, rather than as a full Action
         let result = parse_simple_statement(
             r#"if (1) {
             print("hello");
@@ -225,9 +224,7 @@ mod tests {
 
     #[test]
     fn test_parse_while_statement() {
-        // This test is "not correct" because the body is currently
-        // parsed as a single statement, rather than as a full Action
-        let result = parse_while_statement(
+        let result = parse_simple_statement(
             r#"while (0) {
                 print("hello");
             }"#,
