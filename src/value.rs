@@ -38,7 +38,8 @@ impl Value {
                 _ => true,
             },
             Value::Numeric(n) => match n {
-                NumericValue::Integer(0) | NumericValue::Float(0.0) => false,
+                NumericValue::Integer(0) => false,
+                NumericValue::Float(f) => *f != 0.0,
                 _ => true,
             },
             Value::Uninitialized => false,
