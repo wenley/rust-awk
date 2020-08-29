@@ -1,9 +1,9 @@
 use nom::{combinator::map, multi::many1, sequence::pair, IResult};
 
 use crate::{
+    action::{parse_action, Action},
     basic_types::{Context, Record},
     pattern::{parse_item_pattern, Pattern},
-    statement::{parse_action, Action},
 };
 
 pub struct Item {
@@ -53,8 +53,6 @@ mod tests {
     use super::*;
     use crate::{
         basic_types::Record,
-        expression::Expression,
-        statement::Statement,
         value::{NumericValue, Value},
     };
 
@@ -66,10 +64,9 @@ mod tests {
             full_line: "",
             fields: &fields,
         };
-        let print_statement =
-            Statement::Print(vec![Expression::StringLiteral("hello".to_string())]);
+        let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
-            print_statement.evaluate(&mut empty_context, &record),
+            print_action.output_for_line(&mut empty_context, &record),
             vec!["hello"],
         );
     }
@@ -83,39 +80,27 @@ mod tests {
             fields: &fields,
         };
 
-        let if_conditional = Statement::IfElse {
-            condition: Expression::StringLiteral("not empty".to_string()),
-            if_branch: Action {
-                statements: vec![Statement::Print(vec![Expression::StringLiteral(
-                    "if-branch".to_string(),
-                )])],
-            },
-            else_branch: Action {
-                statements: vec![Statement::Print(vec![Expression::StringLiteral(
-                    "else".to_string(),
-                )])],
-            },
-        };
+        let if_conditional = parse_action(r#"{
+            if ("not empty") {
+                print("if-branch");
+            } else {
+                print("else");
+            };
+        }"#).unwrap().1;
         assert_eq!(
-            if_conditional.evaluate(&mut empty_context, &record),
+            if_conditional.output_for_line(&mut empty_context, &record),
             vec!["if-branch"],
         );
 
-        let else_conditional = Statement::IfElse {
-            condition: Expression::StringLiteral("".to_string()),
-            if_branch: Action {
-                statements: vec![Statement::Print(vec![Expression::StringLiteral(
-                    "if-branch".to_string(),
-                )])],
-            },
-            else_branch: Action {
-                statements: vec![Statement::Print(vec![Expression::StringLiteral(
-                    "else".to_string(),
-                )])],
-            },
-        };
+        let else_conditional = parse_action(r#"{
+            if ("") {
+                print("if-branch");
+            } else {
+                print("else");
+            };
+        }"#).unwrap().1;
         assert_eq!(
-            else_conditional.evaluate(&mut empty_context, &record),
+            else_conditional.output_for_line(&mut empty_context, &record),
             vec!["else"],
         );
     }
@@ -129,14 +114,10 @@ mod tests {
             fields: &fields,
         };
 
-        let assign = Statement::Assign {
-            variable_name: "foo".to_string(),
-            value: Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
-            },
-        };
-        assign.evaluate(&mut context, &record);
+        let assign_action = parse_action(r#"{
+            foo = 1 + 2;
+        }"#).unwrap().1;
+        assign_action.output_for_line(&mut context, &record);
         assert_eq!(
             context.fetch_variable("foo"),
             Value::Numeric(NumericValue::Integer(3)),
