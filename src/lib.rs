@@ -7,6 +7,7 @@ mod expression;
 mod item;
 mod pattern;
 mod value;
+mod whitespace;
 
 use crate::{
     basic_types::{Context, Record},
