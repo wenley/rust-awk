@@ -341,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_parse_field_reference() {
-        let (mut context, mut record) = empty_context_and_record();
+        let (context, mut record) = empty_context_and_record();
         let result = parse_expression("$1");
         assert_eq!(result.is_ok(), true);
         let expression = result.unwrap().1;

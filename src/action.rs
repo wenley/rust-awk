@@ -190,7 +190,6 @@ fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::value::NumericValue;
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
         (
