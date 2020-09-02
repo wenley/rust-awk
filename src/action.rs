@@ -13,7 +13,7 @@ use crate::{
     expression::{parse_expression, Expression},
 };
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 pub(crate) struct Action {
     statements: Vec<Statement>,
 }
@@ -44,7 +44,7 @@ pub(crate) fn parse_action(input: &str) -> IResult<&str, Action> {
     )(input)
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 enum Statement {
     IfElse {
         condition: Expression,
@@ -192,13 +192,27 @@ mod tests {
     use super::*;
     use crate::value::NumericValue;
 
+    fn empty_context_and_record() -> (Context, Record<'static>) {
+        (
+            Context::empty(),
+            Record {
+                full_line: "",
+                fields: vec![],
+            },
+        )
+    }
+
     #[test]
     fn test_parse_statements() {
+        let (mut context, record) = empty_context_and_record();
         let result = parse_print_statement(r#"print("hello")"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            Statement::Print(vec![Expression::StringLiteral("hello".to_string())])
+            Action {
+                statements: vec![result.unwrap().1]
+            }
+            .output_for_line(&mut context, &record),
+            vec!["hello"],
         );
 
         let result = parse_statements(
@@ -209,20 +223,17 @@ mod tests {
         );
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            vec![
-                Statement::Print(vec![Expression::NumericLiteral(NumericValue::Integer(1))]),
-                Statement::Print(vec![
-                    Expression::NumericLiteral(NumericValue::Float(2.0)),
-                    Expression::StringLiteral("extra arg".to_string()),
-                ]),
-                Statement::Print(vec![Expression::StringLiteral("hello".to_string())]),
-            ],
+            Action {
+                statements: result.unwrap().1
+            }
+            .output_for_line(&mut context, &record),
+            vec!["1", "2 extra arg", "hello",],
         );
     }
 
     #[test]
     fn test_parse_if_else_statement() {
+        let (mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(
             r#"if (1) {
             print("hello");
@@ -230,50 +241,45 @@ mod tests {
         );
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            Statement::IfElse {
-                condition: Expression::NumericLiteral(NumericValue::Integer(1)),
-                if_branch: Action {
-                    statements: vec![Statement::Print(vec![Expression::StringLiteral(
-                        "hello".to_string()
-                    )])],
-                },
-                else_branch: Action { statements: vec![] },
-            },
+            Action {
+                statements: vec![result.unwrap().1]
+            }
+            .output_for_line(&mut context, &record),
+            vec!["hello"],
         );
     }
 
     #[test]
     fn test_parse_while_statement() {
+        let (mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(
             r#"while (0) {
                 print("hello");
             }"#,
         );
+        let empty_vec: Vec<&'static str> = vec![];
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            Statement::While {
-                condition: Expression::NumericLiteral(NumericValue::Integer(0)),
-                body: Action {
-                    statements: vec![Statement::Print(vec![Expression::StringLiteral(
-                        "hello".to_string()
-                    )])],
-                },
-            },
+            Action {
+                statements: vec![result.unwrap().1]
+            }
+            .output_for_line(&mut context, &record),
+            empty_vec,
         );
     }
 
     #[test]
     fn test_parse_assign_statement() {
+        let (mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(r#"variable = "hi""#);
+        let empty_vec: Vec<&'static str> = vec![];
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            Statement::Assign {
-                variable_name: "variable".to_string(),
-                value: Expression::StringLiteral("hi".to_string()),
-            },
+            Action {
+                statements: vec![result.unwrap().1]
+            }
+            .output_for_line(&mut context, &record),
+            empty_vec,
         );
     }
 }

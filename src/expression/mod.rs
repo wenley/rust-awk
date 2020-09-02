@@ -107,40 +107,40 @@ impl Expression {
     }
 }
 
-impl PartialEq for Expression {
-    fn eq(&self, other: &Expression) -> bool {
-        match (self, other) {
-            (Expression::StringLiteral(s1), Expression::StringLiteral(s2)) => s1 == s2,
-            (Expression::NumericLiteral(n1), Expression::NumericLiteral(n2)) => n1 == n2,
-            (Expression::Regex(r1), Expression::Regex(r2)) => r1.as_str() == r2.as_str(),
-            (Expression::Variable(s1), Expression::Variable(s2)) => s1 == s2,
-            (Expression::FieldReference(s1), Expression::FieldReference(s2)) => s1 == s2,
-            (
-                Expression::AddBinary {
-                    left: l1,
-                    right: r1,
-                },
-                Expression::AddBinary {
-                    left: l2,
-                    right: r2,
-                },
-            ) => l1 == l2 && r1 == r2,
-            (
-                Expression::RegexMatch {
-                    left: l1,
-                    right: r1,
-                    negated: n1,
-                },
-                Expression::RegexMatch {
-                    left: l2,
-                    right: r2,
-                    negated: n2,
-                },
-            ) => l1 == l2 && r1 == r2 && n1 == n2,
-            _ => false,
-        }
-    }
-}
+// impl PartialEq for Expression {
+//     fn eq(&self, other: &Expression) -> bool {
+//         match (self, other) {
+//             (Expression::StringLiteral(s1), Expression::StringLiteral(s2)) => s1 == s2,
+//             (Expression::NumericLiteral(n1), Expression::NumericLiteral(n2)) => n1 == n2,
+//             (Expression::Regex(r1), Expression::Regex(r2)) => r1.as_str() == r2.as_str(),
+//             (Expression::Variable(s1), Expression::Variable(s2)) => s1 == s2,
+//             (Expression::FieldReference(s1), Expression::FieldReference(s2)) => s1 == s2,
+//             (
+//                 Expression::AddBinary {
+//                     left: l1,
+//                     right: r1,
+//                 },
+//                 Expression::AddBinary {
+//                     left: l2,
+//                     right: r2,
+//                 },
+//             ) => l1 == l2 && r1 == r2,
+//             (
+//                 Expression::RegexMatch {
+//                     left: l1,
+//                     right: r1,
+//                     negated: n1,
+//                 },
+//                 Expression::RegexMatch {
+//                     left: l2,
+//                     right: r2,
+//                     negated: n2,
+//                 },
+//             ) => l1 == l2 && r1 == r2 && n1 == n2,
+//             _ => false,
+//         }
+//     }
+// }
 
 /// Tiers of parsing
 ///
@@ -325,64 +325,57 @@ mod tests {
     }
 
     #[test]
-    fn parse_expressions() {
+    fn parse_integer_literal() {
+        let (context, record) = empty_context_and_record();
+
         let result = parse_expression("1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1,
-            Expression::NumericLiteral(NumericValue::Integer(1))
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_string_literal(r#""hello""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            Expression::StringLiteral("hello".to_string()),
+            result.unwrap().1.evaluate(&context, &record),
+            Value::String("hello".to_string()),
         );
 
         let result = parse_expression(r#""hello world""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1,
-            Expression::StringLiteral("hello world".to_string()),
+            result.unwrap().1.evaluate(&context, &record),
+            Value::String("hello world".to_string()),
         );
 
         let result = parse_expression("(1)");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1,
-            Expression::NumericLiteral(NumericValue::Integer(1))
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_expression("(1) + (2.5)");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1,
-            Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Float(2.5))),
-            }
-        );
-        let result = parse_expression("(1) + (2.5)");
-        assert_eq!(result.is_ok(), true);
-        assert_eq!(
-            result.unwrap().1,
-            Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Float(2.5))),
-            }
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Float(3.5))
         );
     }
 
     #[test]
     fn test_parse_field_reference() {
+        let (mut context, mut record) = empty_context_and_record();
         let result = parse_expression("$1");
         assert_eq!(result.is_ok(), true);
+        let expression = result.unwrap().1;
+        assert_eq!(expression.evaluate(&context, &record), Value::Uninitialized,);
+
+        record.fields = vec!["hello"];
         assert_eq!(
-            result.unwrap().1,
-            Expression::FieldReference(Box::new(Expression::NumericLiteral(
-                NumericValue::Integer(1)
-            )),),
+            expression.evaluate(&context, &record),
+            Value::String("hello".to_string()),
         );
     }
 
@@ -393,14 +386,6 @@ mod tests {
         let result = parse_expression("1 ~ 2");
         assert!(result.is_ok());
         let expression = result.unwrap().1;
-        assert_eq!(
-            expression,
-            Expression::RegexMatch {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
-                negated: false,
-            },
-        );
         assert_eq!(
             expression.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(0)),
@@ -423,14 +408,6 @@ mod tests {
         let result = parse_expression("1 !~ 2");
         assert!(result.is_ok());
         let expression = result.unwrap().1;
-        assert_eq!(
-            expression,
-            Expression::RegexMatch {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
-                negated: true,
-            },
-        );
         assert_eq!(
             expression.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(1)),
