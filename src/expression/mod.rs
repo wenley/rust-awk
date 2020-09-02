@@ -41,14 +41,21 @@ impl Expression {
             Expression::NumericLiteral(numeric) => Value::Numeric(numeric.clone()),
             Expression::AddBinary { left, right } => {
                 match (
-                    left.evaluate(context, record),
-                    right.evaluate(context, record),
+                    left.evaluate(context, record).coerce_to_numeric(),
+                    right.evaluate(context, record).coerce_to_numeric(),
                 ) {
-                    (
-                        Value::Numeric(NumericValue::Integer(x)),
-                        Value::Numeric(NumericValue::Integer(y)),
-                    ) => Value::Numeric(NumericValue::Integer(x + y)),
-                    _ => panic!("Unsupported addition values {:?} and {:?}", left, right,),
+                    (NumericValue::Integer(x), NumericValue::Integer(y)) => {
+                        Value::Numeric(NumericValue::Integer(x + y))
+                    }
+                    (NumericValue::Integer(x), NumericValue::Float(y)) => {
+                        Value::Numeric(NumericValue::Float((x as f64) + y))
+                    }
+                    (NumericValue::Float(x), NumericValue::Integer(y)) => {
+                        Value::Numeric(NumericValue::Float(x + (y as f64)))
+                    }
+                    (NumericValue::Float(x), NumericValue::Float(y)) => {
+                        Value::Numeric(NumericValue::Float(x + y))
+                    }
                 }
             }
             Expression::Regex(_) => {
