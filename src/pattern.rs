@@ -21,7 +21,9 @@ impl Pattern {
     pub(crate) fn matches<'a>(&self, context: &mut Context, record: &Record<'a>) -> bool {
         match self {
             Pattern::MatchEverything => true,
-            Pattern::Expression(expression) => expression.evaluate(context, record).coercion_to_boolean(),
+            Pattern::Expression(expression) => {
+                expression.evaluate(context, record).coercion_to_boolean()
+            }
             Pattern::Begin => false,
             Pattern::End => false,
         }

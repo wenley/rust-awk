@@ -6,7 +6,7 @@ use nom::{
     combinator::{map, map_res},
     multi::{many0, many1},
     re_find,
-    sequence::{delimited, pair, preceded, tuple},
+    sequence::{delimited, pair, preceded, separated_pair, tuple},
     IResult,
 };
 
@@ -26,6 +26,10 @@ pub(crate) enum Expression {
     Regex(Regex),
     Variable(String),
     FieldReference(Box<Expression>),
+    RegexMatch {
+        left: Box<Expression>,
+        right: Box<Expression>,
+    },
 }
 
 impl Expression {
@@ -71,6 +75,21 @@ impl Expression {
                         .unwrap_or(Value::Uninitialized),
                 }
             }
+            Expression::RegexMatch { left, right } => {
+                let left_value = left.evaluate(context, record).coerce_to_string();
+
+                let matches = match &**right {
+                    Expression::Regex(regex) => regex.is_match(&left_value),
+                    _ => {
+                        let value = right.evaluate(context, record).coerce_to_string();
+                        Regex::new(&value).unwrap().is_match(&left_value)
+                    }
+                };
+
+                let int_value = if matches { 1 } else { 0 };
+
+                Value::Numeric(NumericValue::Integer(int_value))
+            }
         }
     }
 }
@@ -93,13 +112,44 @@ impl PartialEq for Expression {
                     right: r2,
                 },
             ) => l1 == l2 && r1 == r2,
+            (
+                Expression::RegexMatch {
+                    left: l1,
+                    right: r1,
+                },
+                Expression::RegexMatch {
+                    left: l2,
+                    right: r2,
+                },
+            ) => l1 == l2 && r1 == r2,
             _ => false,
         }
     }
 }
 
+/// Tiers of parsing
+///
+/// The top-level parser is responsible for the loosest-binding / lowest-precedence
+/// operators. As we descend the levels, we encounter tighter-binding operators
+/// until we reach literals and the parenthesized expressions.
+
 pub(crate) fn parse_expression(input: &str) -> IResult<&str, Expression> {
-    parse_addition(input)
+    alt((parse_regex_match, parse_addition))(input)
+}
+
+// Regex matching does not associate
+fn parse_regex_match(input: &str) -> IResult<&str, Expression> {
+    map(
+        separated_pair(
+            parse_addition,
+            delimited(multispace0, one_of("~"), multispace0),
+            parse_addition,
+        ),
+        |(left, right)| Expression::RegexMatch {
+            left: Box::new(left),
+            right: Box::new(right),
+        },
+    )(input)
 }
 
 fn parse_addition(input: &str) -> IResult<&str, Expression> {
@@ -319,6 +369,45 @@ mod tests {
             Expression::FieldReference(Box::new(Expression::NumericLiteral(
                 NumericValue::Integer(1)
             )),),
+        );
+    }
+
+    #[test]
+    fn test_regex_match() {
+        let context = Context::empty();
+        let fields = vec![];
+        let record = Record {
+            full_line: "",
+            fields: &fields,
+        };
+
+        let result = parse_expression("1 ~ 2");
+        assert!(result.is_ok());
+        let expression = result.unwrap().1;
+        assert_eq!(
+            expression,
+            Expression::RegexMatch {
+                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
+                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
+            },
+        );
+        assert_eq!(
+            expression.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(0)),
+        );
+
+        // Cannot consume the full expression
+        let result = parse_expression("1 ~ 2 ~ 3");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().0, " ~ 3");
+
+        let result = parse_expression("1 + 2 ~ 3");
+        assert!(result.is_ok());
+        let (remainder, expression) = result.unwrap();
+        assert_eq!(remainder, "");
+        assert_eq!(
+            expression.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
         );
     }
 }
