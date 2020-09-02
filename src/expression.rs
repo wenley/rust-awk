@@ -2,11 +2,12 @@ use regex::Regex;
 
 use nom::{
     branch::alt,
+    bytes::complete::tag,
     character::complete::{alpha1, multispace0, none_of, one_of},
     combinator::{map, map_res},
     multi::{many0, many1},
     re_find,
-    sequence::{delimited, pair, preceded, separated_pair, tuple},
+    sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
 
@@ -29,6 +30,7 @@ pub(crate) enum Expression {
     RegexMatch {
         left: Box<Expression>,
         right: Box<Expression>,
+        negated: bool,
     },
 }
 
@@ -75,7 +77,11 @@ impl Expression {
                         .unwrap_or(Value::Uninitialized),
                 }
             }
-            Expression::RegexMatch { left, right } => {
+            Expression::RegexMatch {
+                left,
+                right,
+                negated,
+            } => {
                 let left_value = left.evaluate(context, record).coerce_to_string();
 
                 let matches = match &**right {
@@ -86,7 +92,7 @@ impl Expression {
                     }
                 };
 
-                let int_value = if matches { 1 } else { 0 };
+                let int_value = if matches ^ negated { 1 } else { 0 };
 
                 Value::Numeric(NumericValue::Integer(int_value))
             }
@@ -116,12 +122,14 @@ impl PartialEq for Expression {
                 Expression::RegexMatch {
                     left: l1,
                     right: r1,
+                    negated: n1,
                 },
                 Expression::RegexMatch {
                     left: l2,
                     right: r2,
+                    negated: n2,
                 },
-            ) => l1 == l2 && r1 == r2,
+            ) => l1 == l2 && r1 == r2 && n1 == n2,
             _ => false,
         }
     }
@@ -140,14 +148,22 @@ pub(crate) fn parse_expression(input: &str) -> IResult<&str, Expression> {
 // Regex matching does not associate
 fn parse_regex_match(input: &str) -> IResult<&str, Expression> {
     map(
-        separated_pair(
+        tuple((
             parse_addition,
-            delimited(multispace0, one_of("~"), multispace0),
+            delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
             parse_addition,
-        ),
-        |(left, right)| Expression::RegexMatch {
-            left: Box::new(left),
-            right: Box::new(right),
+        )),
+        |(left, operator, right)| {
+            let negated = match operator.len() {
+                1 => false,
+                2 => true,
+                _ => panic!("Unexpected regex operator length: {}", operator),
+            };
+            Expression::RegexMatch {
+                left: Box::new(left),
+                right: Box::new(right),
+                negated,
+            }
         },
     )(input)
 }
@@ -389,6 +405,7 @@ mod tests {
             Expression::RegexMatch {
                 left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
                 right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
+                negated: false,
             },
         );
         assert_eq!(
@@ -405,6 +422,22 @@ mod tests {
         assert!(result.is_ok());
         let (remainder, expression) = result.unwrap();
         assert_eq!(remainder, "");
+        assert_eq!(
+            expression.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
+        );
+
+        let result = parse_expression("1 !~ 2");
+        assert!(result.is_ok());
+        let expression = result.unwrap().1;
+        assert_eq!(
+            expression,
+            Expression::RegexMatch {
+                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(1))),
+                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
+                negated: true,
+            },
+        );
         assert_eq!(
             expression.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(1)),
