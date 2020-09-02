@@ -1,10 +1,11 @@
 use regex::Regex;
+use std::fmt::Debug;
 
 use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{alpha1, multispace0, none_of, one_of},
-    combinator::{map, map_res},
+    combinator::{map},
     multi::{many0, many1},
     re_find,
     sequence::{delimited, pair, preceded, tuple},
@@ -16,30 +17,34 @@ use crate::{
     value::{parse_float_literal, parse_integer_literal, NumericValue, Value},
 };
 
+pub(crate) trait Expression: Debug {
+    fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value;
+}
+
 #[derive(Debug)]
-pub(crate) enum Expression {
+enum ExpressionImpl {
     StringLiteral(String),
     NumericLiteral(NumericValue),
     AddBinary {
-        left: Box<Expression>,
-        right: Box<Expression>,
+        left: Box<dyn Expression>,
+        right: Box<dyn Expression>,
     },
     Regex(Regex),
     Variable(String),
-    FieldReference(Box<Expression>),
+    FieldReference(Box<dyn Expression>),
     RegexMatch {
-        left: Box<Expression>,
-        right: Box<Expression>,
+        left: Box<dyn Expression>,
+        right: Box<dyn Expression>,
         negated: bool,
     },
 }
 
-impl Expression {
-    pub(crate) fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
+impl Expression for ExpressionImpl {
+    fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
         match self {
-            Expression::StringLiteral(string) => Value::String(string.clone()),
-            Expression::NumericLiteral(numeric) => Value::Numeric(numeric.clone()),
-            Expression::AddBinary { left, right } => {
+            ExpressionImpl::StringLiteral(string) => Value::String(string.clone()),
+            ExpressionImpl::NumericLiteral(numeric) => Value::Numeric(numeric.clone()),
+            ExpressionImpl::AddBinary { left, right } => {
                 match (
                     left.evaluate(context, record).coerce_to_numeric(),
                     right.evaluate(context, record).coerce_to_numeric(),
@@ -58,7 +63,7 @@ impl Expression {
                     }
                 }
             }
-            Expression::Regex(_) => {
+            ExpressionImpl::Regex(_) => {
                 // Regex expressions shouldn't be evaluated as a standalone value, but should be
                 // evaluated as part of explicit pattern matching operators. The one exception is
                 // when a Regex is the pattern for an action, which is handled separately.
@@ -67,8 +72,8 @@ impl Expression {
                 // will be interpreted as such
                 Value::Uninitialized
             }
-            Expression::Variable(variable_name) => context.fetch_variable(variable_name),
-            Expression::FieldReference(expression) => {
+            ExpressionImpl::Variable(variable_name) => context.fetch_variable(variable_name),
+            ExpressionImpl::FieldReference(expression) => {
                 let value = expression.evaluate(context, record).coerce_to_numeric();
                 let unsafe_index = match value {
                     NumericValue::Integer(i) => i,
@@ -84,20 +89,22 @@ impl Expression {
                         .unwrap_or(Value::Uninitialized),
                 }
             }
-            Expression::RegexMatch {
+            ExpressionImpl::RegexMatch {
                 left,
                 right,
                 negated,
             } => {
                 let left_value = left.evaluate(context, record).coerce_to_string();
 
-                let matches = match &**right {
-                    Expression::Regex(regex) => regex.is_match(&left_value),
-                    _ => {
-                        let value = right.evaluate(context, record).coerce_to_string();
-                        Regex::new(&value).unwrap().is_match(&left_value)
-                    }
-                };
+                let right_value = right.evaluate(context, record).coerce_to_string();
+                let matches = Regex::new(&right_value).unwrap().is_match(&left_value);
+                // let matches = match &**right {
+                //     // ExpressionImpl::Regex(regex) => regex.is_match(&left_value),
+                //     _ => {
+                //         let value = right.evaluate(context, record).coerce_to_string();
+                //         Regex::new(&value).unwrap().is_match(&left_value)
+                //     }
+                // };
 
                 let int_value = if matches ^ negated { 1 } else { 0 };
 
@@ -107,75 +114,37 @@ impl Expression {
     }
 }
 
-// impl PartialEq for Expression {
-//     fn eq(&self, other: &Expression) -> bool {
-//         match (self, other) {
-//             (Expression::StringLiteral(s1), Expression::StringLiteral(s2)) => s1 == s2,
-//             (Expression::NumericLiteral(n1), Expression::NumericLiteral(n2)) => n1 == n2,
-//             (Expression::Regex(r1), Expression::Regex(r2)) => r1.as_str() == r2.as_str(),
-//             (Expression::Variable(s1), Expression::Variable(s2)) => s1 == s2,
-//             (Expression::FieldReference(s1), Expression::FieldReference(s2)) => s1 == s2,
-//             (
-//                 Expression::AddBinary {
-//                     left: l1,
-//                     right: r1,
-//                 },
-//                 Expression::AddBinary {
-//                     left: l2,
-//                     right: r2,
-//                 },
-//             ) => l1 == l2 && r1 == r2,
-//             (
-//                 Expression::RegexMatch {
-//                     left: l1,
-//                     right: r1,
-//                     negated: n1,
-//                 },
-//                 Expression::RegexMatch {
-//                     left: l2,
-//                     right: r2,
-//                     negated: n2,
-//                 },
-//             ) => l1 == l2 && r1 == r2 && n1 == n2,
-//             _ => false,
-//         }
-//     }
-// }
-
 /// Tiers of parsing
 ///
 /// The top-level parser is responsible for the loosest-binding / lowest-precedence
 /// operators. As we descend the levels, we encounter tighter-binding operators
 /// until we reach literals and the parenthesized expressions.
 
-pub(crate) fn parse_expression(input: &str) -> IResult<&str, Expression> {
+pub(crate) fn parse_expression(input: &str) -> IResult<&str, Box<dyn Expression>> {
     alt((parse_regex_match, parse_addition))(input)
 }
 
 // Regex matching does not associate
-fn parse_regex_match(input: &str) -> IResult<&str, Expression> {
-    map(
-        tuple((
-            parse_addition,
-            delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
-            parse_addition,
-        )),
-        |(left, operator, right)| {
-            let negated = match operator.len() {
-                1 => false,
-                2 => true,
-                _ => panic!("Unexpected regex operator length: {}", operator),
-            };
-            Expression::RegexMatch {
-                left: Box::new(left),
-                right: Box::new(right),
-                negated,
-            }
-        },
-    )(input)
+fn parse_regex_match(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let (i, (left, operator, right)) = tuple((
+        parse_addition,
+        delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
+        parse_addition,
+    ))(input)?;
+
+    let negated = match operator.len() {
+        1 => false,
+        2 => true,
+        _ => panic!("Unexpected regex operator length: {}", operator),
+    };
+    Result::Ok((i, Box::new(ExpressionImpl::RegexMatch {
+        left: left,
+        right: right,
+        negated,
+    })))
 }
 
-fn parse_addition(input: &str) -> IResult<&str, Expression> {
+fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let parse_added_expr = map(
         pair(
             delimited(multispace0, one_of("+"), multispace0),
@@ -183,19 +152,20 @@ fn parse_addition(input: &str) -> IResult<&str, Expression> {
         ),
         |(_, rhs)| rhs,
     );
+    // Why does this `map` work??
     map(
         pair(parse_primary, many0(parse_added_expr)),
         move |(first, mut rest)| {
             rest.drain(0..)
-                .fold(first, |inner, next| Expression::AddBinary {
-                    left: Box::new(inner),
-                    right: Box::new(next),
-                })
+                .fold(first, |inner, next| Box::new(ExpressionImpl::AddBinary {
+                    left: inner,
+                    right: next,
+                }))
         },
     )(input)
 }
 
-fn parse_primary(input: &str) -> IResult<&str, Expression> {
+fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
     alt((
         parse_literal,
         parse_variable,
@@ -204,15 +174,17 @@ fn parse_primary(input: &str) -> IResult<&str, Expression> {
     ))(input)
 }
 
-fn parse_parens(input: &str) -> IResult<&str, Expression> {
+fn parse_parens(input: &str) -> IResult<&str, Box<dyn Expression>> {
     delimited(one_of("("), parse_expression, one_of(")"))(input)
 }
 
-fn parse_variable(input: &str) -> IResult<&str, Expression> {
-    map(alpha1, |name: &str| Expression::Variable(name.to_string()))(input)
+fn parse_variable(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let (i, name) = alpha1(input)?;
+
+    Result::Ok((i, Box::new(ExpressionImpl::Variable(name.to_string()))))
 }
 
-fn parse_literal(input: &str) -> IResult<&str, Expression> {
+fn parse_literal(input: &str) -> IResult<&str, Box<dyn Expression>> {
     alt((
         parse_string_literal,
         parse_regex_literal,
@@ -220,18 +192,16 @@ fn parse_literal(input: &str) -> IResult<&str, Expression> {
     ))(input)
 }
 
-fn parse_number_literal(input: &str) -> IResult<&str, Expression> {
-    map(
-        alt((parse_float_literal, parse_integer_literal)),
-        |number| Expression::NumericLiteral(number),
-    )(input)
+fn parse_number_literal(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let (i, number) = alt((parse_float_literal, parse_integer_literal))(input)?;
+
+    Result::Ok((i, Box::new(ExpressionImpl::NumericLiteral(number))))
 }
 
-fn parse_string_literal(input: &str) -> IResult<&str, Expression> {
-    map(
-        delimited(one_of("\""), parse_string_contents, one_of("\"")),
-        |contents: &str| Expression::StringLiteral(contents.to_string()),
-    )(input)
+fn parse_string_literal(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let (i, contents) = delimited(one_of("\""), parse_string_contents, one_of("\""))(input)?;
+
+    Result::Ok((i, Box::new(ExpressionImpl::StringLiteral(contents.to_string()))))
 }
 
 fn parse_string_contents(input: &str) -> IResult<&str, &str> {
@@ -243,17 +213,22 @@ fn parse_string_contents(input: &str) -> IResult<&str, &str> {
     re_find!(input, r#"^([^\\"]|\\.)*"#)
 }
 
-fn parse_regex_literal(input: &str) -> IResult<&str, Expression> {
-    let parser = tuple((one_of("/"), many1(none_of("/")), one_of("/")));
-    map_res(parser, |(_, vec, _)| {
-        regex::Regex::new(&vec.iter().collect::<String>()).map(|regex| Expression::Regex(regex))
-    })(input)
+use nom::error::ParseError;
+use nom::error::ErrorKind;
+use nom::Err;
+fn parse_regex_literal(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let (i, (_, vec, _)) = tuple((one_of("/"), many1(none_of("/")), one_of("/")))(input)?;
+
+    let result = regex::Regex::new(&vec.iter().collect::<String>());
+    match result {
+        Ok(r) => Result::Ok((i, Box::new(ExpressionImpl::Regex(r)))),
+        Err(_) => Result::Err(Err::Error(ParseError::from_error_kind(i, ErrorKind::MapRes)))
+    }
 }
 
-fn parse_field_reference(input: &str) -> IResult<&str, Expression> {
-    map(preceded(one_of("$"), parse_expression), |expr| {
-        Expression::FieldReference(Box::new(expr))
-    })(input)
+fn parse_field_reference(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let (i, expr) = preceded(one_of("$"), parse_expression)(input)?;
+    Result::Ok((i, Box::new(ExpressionImpl::FieldReference(expr))))
 }
 
 #[cfg(test)]
@@ -273,12 +248,12 @@ mod tests {
     #[test]
     fn literals_can_evaluate() {
         let (context, record) = empty_context_and_record();
-        let string = Expression::StringLiteral("hello".to_string());
+        let string = ExpressionImpl::StringLiteral("hello".to_string());
         assert_eq!(
             string.evaluate(&context, &record),
             Value::String("hello".to_string())
         );
-        let numeric = Expression::NumericLiteral(NumericValue::Integer(0));
+        let numeric = ExpressionImpl::NumericLiteral(NumericValue::Integer(0));
         assert_eq!(
             numeric.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(0))
@@ -292,7 +267,7 @@ mod tests {
         context.assign_variable("foo", value.clone());
 
         assert_eq!(
-            Expression::Variable("foo".to_string()).evaluate(&context, &record),
+            ExpressionImpl::Variable("foo".to_string()).evaluate(&context, &record),
             value,
         );
     }
@@ -301,9 +276,9 @@ mod tests {
     fn binary_expressions_can_evaluate() {
         let (context, record) = empty_context_and_record();
         assert_eq!(
-            Expression::AddBinary {
-                left: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
-                right: Box::new(Expression::NumericLiteral(NumericValue::Integer(3))),
+            ExpressionImpl::AddBinary {
+                left: Box::new(ExpressionImpl::NumericLiteral(NumericValue::Integer(2))),
+                right: Box::new(ExpressionImpl::NumericLiteral(NumericValue::Integer(3))),
             }
             .evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(5)),
@@ -316,7 +291,7 @@ mod tests {
         record.fields = vec!["first", "second"];
 
         assert_eq!(
-            Expression::FieldReference(Box::new(Expression::NumericLiteral(
+            ExpressionImpl::FieldReference(Box::new(ExpressionImpl::NumericLiteral(
                 NumericValue::Integer(1)
             )))
             .evaluate(&context, &record),

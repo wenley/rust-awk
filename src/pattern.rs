@@ -12,7 +12,7 @@ use crate::{
 
 pub(crate) enum Pattern {
     MatchEverything,
-    Expression(Expression),
+    Expression(Box<dyn Expression>),
     Begin,
     End,
 }
@@ -22,7 +22,7 @@ impl Pattern {
         match self {
             Pattern::MatchEverything => true,
             Pattern::Expression(expression) => match expression {
-                Expression::Regex(regex) => regex.is_match(record.full_line),
+                // Expression::Regex(regex) => regex.is_match(record.full_line),
                 _ => expression.evaluate(context, record).coercion_to_boolean(),
             },
             Pattern::Begin => false,

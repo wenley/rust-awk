@@ -47,17 +47,17 @@ pub(crate) fn parse_action(input: &str) -> IResult<&str, Action> {
 #[derive(Debug)]
 enum Statement {
     IfElse {
-        condition: Expression,
+        condition: Box<dyn Expression>,
         if_branch: Action,
         else_branch: Action,
     },
-    Print(Vec<Expression>),
+    Print(Vec<Box<dyn Expression>>),
     Assign {
         variable_name: String,
-        value: Expression,
+        value: Box<dyn Expression>,
     },
     While {
-        condition: Expression,
+        condition: Box<dyn Expression>,
         body: Action,
     },
 }
