@@ -26,10 +26,9 @@ impl Item {
 
     pub(crate) fn output_for_begin(&self, context: &mut Context) -> Vec<String> {
         if let Pattern::Begin = self.pattern {
-            let empty_fields = vec![];
             let empty_record = Record {
                 full_line: "",
-                fields: &empty_fields,
+                fields: vec![],
             };
             self.action.output_for_line(context, &empty_record)
         } else {
@@ -60,14 +59,19 @@ mod tests {
         value::{NumericValue, Value},
     };
 
+    fn empty_context_and_record() -> (Context, Record<'static>) {
+        (
+            Context::empty(),
+            Record {
+                full_line: "",
+                fields: vec![],
+            },
+        )
+    }
+
     #[test]
     fn print_statement_produces_value() {
-        let mut empty_context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (mut empty_context, record) = empty_context_and_record();
         let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
             print_action.output_for_line(&mut empty_context, &record),
@@ -77,12 +81,7 @@ mod tests {
 
     #[test]
     fn if_produces_correct_value() {
-        let mut empty_context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (mut empty_context, record) = empty_context_and_record();
 
         let if_conditional = parse_action(
             r#"{
@@ -119,12 +118,7 @@ mod tests {
 
     #[test]
     fn assignment_updates_context() {
-        let mut context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (mut context, record) = empty_context_and_record();
 
         let assign_action = parse_action(
             r#"{

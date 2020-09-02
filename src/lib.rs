@@ -40,7 +40,7 @@ impl ProgramRun<'_> {
     pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
         let record = Record {
             full_line: line,
-            fields: &self.split(line),
+            fields: self.split(line),
         };
 
         self.program

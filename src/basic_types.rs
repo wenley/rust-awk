@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 pub(crate) struct Record<'a> {
     pub(crate) full_line: &'a str,
-    pub(crate) fields: &'a Vec<&'a str>,
+    pub(crate) fields: Vec<&'a str>,
 }
 
 static UNINITIALIZED_VALUE: Value = Value::Uninitialized;

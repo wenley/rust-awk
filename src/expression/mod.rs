@@ -253,14 +253,19 @@ fn parse_field_reference(input: &str) -> IResult<&str, Expression> {
 mod tests {
     use super::*;
 
+    fn empty_context_and_record() -> (Context, Record<'static>) {
+        (
+            Context::empty(),
+            Record {
+                full_line: "",
+                fields: vec![],
+            },
+        )
+    }
+
     #[test]
     fn literals_can_evaluate() {
-        let context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (context, record) = empty_context_and_record();
         let string = Expression::StringLiteral("hello".to_string());
         assert_eq!(
             string.evaluate(&context, &record),
@@ -275,12 +280,7 @@ mod tests {
 
     #[test]
     fn variables_can_evaluate() {
-        let mut context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (mut context, record) = empty_context_and_record();
         let value = Value::Numeric(NumericValue::Integer(1));
         context.assign_variable("foo", value.clone());
 
@@ -292,12 +292,7 @@ mod tests {
 
     #[test]
     fn binary_expressions_can_evaluate() {
-        let context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (context, record) = empty_context_and_record();
         assert_eq!(
             Expression::AddBinary {
                 left: Box::new(Expression::NumericLiteral(NumericValue::Integer(2))),
@@ -310,12 +305,8 @@ mod tests {
 
     #[test]
     fn field_reference_can_evaluate() {
-        let context = Context::empty();
-        let fields = vec!["first", "second"];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (context, mut record) = empty_context_and_record();
+        record.fields = vec!["first", "second"];
 
         assert_eq!(
             Expression::FieldReference(Box::new(Expression::NumericLiteral(
@@ -390,12 +381,7 @@ mod tests {
 
     #[test]
     fn test_regex_match() {
-        let context = Context::empty();
-        let fields = vec![];
-        let record = Record {
-            full_line: "",
-            fields: &fields,
-        };
+        let (context, record) = empty_context_and_record();
 
         let result = parse_expression("1 ~ 2");
         assert!(result.is_ok());
