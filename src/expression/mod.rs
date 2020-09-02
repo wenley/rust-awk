@@ -19,6 +19,8 @@ use crate::{
 
 pub(crate) trait Expression: Debug {
     fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value;
+
+    fn regex<'a>(&'a self) -> Option<&'a Regex>;
 }
 
 #[derive(Debug)]
@@ -40,6 +42,13 @@ enum ExpressionImpl {
 }
 
 impl Expression for ExpressionImpl {
+    fn regex<'a>(&'a self) -> Option<&'a Regex> {
+        match self {
+            ExpressionImpl::Regex(r) => Some(r),
+            _ => None,
+        }
+    }
+
     fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
         match self {
             ExpressionImpl::StringLiteral(string) => Value::String(string.clone()),
@@ -96,16 +105,13 @@ impl Expression for ExpressionImpl {
             } => {
                 let left_value = left.evaluate(context, record).coerce_to_string();
 
-                let right_value = right.evaluate(context, record).coerce_to_string();
-                let matches = Regex::new(&right_value).unwrap().is_match(&left_value);
-                // let matches = match &**right {
-                //     // ExpressionImpl::Regex(regex) => regex.is_match(&left_value),
-                //     _ => {
-                //         let value = right.evaluate(context, record).coerce_to_string();
-                //         Regex::new(&value).unwrap().is_match(&left_value)
-                //     }
-                // };
-
+                let matches = match right.regex() {
+                    Some(r) => r.is_match(&left_value),
+                    None => {
+                        let right_value = right.evaluate(context, record).coerce_to_string();
+                        Regex::new(&right_value).unwrap().is_match(&left_value)
+                    }
+                };
                 let int_value = if matches ^ negated { 1 } else { 0 };
 
                 Value::Numeric(NumericValue::Integer(int_value))

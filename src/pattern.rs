@@ -21,9 +21,9 @@ impl Pattern {
     pub(crate) fn matches<'a>(&self, context: &mut Context, record: &Record<'a>) -> bool {
         match self {
             Pattern::MatchEverything => true,
-            Pattern::Expression(expression) => match expression {
-                // Expression::Regex(regex) => regex.is_match(record.full_line),
-                _ => expression.evaluate(context, record).coercion_to_boolean(),
+            Pattern::Expression(expression) => match expression.regex() {
+                Some(regex) => regex.is_match(record.full_line),
+                None => expression.evaluate(context, record).coercion_to_boolean(),
             },
             Pattern::Begin => false,
             Pattern::End => false,
