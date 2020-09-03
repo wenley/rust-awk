@@ -4,7 +4,7 @@ use nom::{
     character::complete::{multispace0, one_of},
     combinator::map,
     multi::many0,
-    sequence::{delimited, pair},
+    sequence::{delimited, pair, preceded},
     IResult,
 };
 
@@ -57,12 +57,9 @@ impl Expression for BinaryMath {
 }
 
 pub(super) fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
-    let parse_added_expr = map(
-        pair(
-            delimited(multispace0, one_of("+"), multispace0),
-            super::parse_primary,
-        ),
-        |(_, rhs)| rhs,
+    let parse_added_expr = preceded(
+        delimited(multispace0, one_of("+"), multispace0),
+        super::parse_primary,
     );
     // Why does this `map` work??
     map(
