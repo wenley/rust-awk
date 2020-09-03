@@ -100,6 +100,8 @@ fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
     )(input)
 }
 
+// Since multiplication is a higher precedence, it is lower level -> gets to consume characters
+// first
 fn parse_multiplication(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let parse_added_expr = pair(
         map(
