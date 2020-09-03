@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, multispace0, one_of},
+    character::complete::{multispace0, one_of},
     combinator::map,
     multi::{many0, separated_list},
     sequence::{delimited, terminated, tuple},
@@ -10,7 +10,7 @@ use nom::{
 
 use crate::{
     basic_types::{Context, Record},
-    expression::{parse_expression, Expression},
+    expression::{parse_assignable, parse_expression, Assign, Expression},
 };
 
 #[derive(Debug)]
@@ -53,7 +53,7 @@ enum Statement {
     },
     Print(Vec<Box<dyn Expression>>),
     Assign {
-        variable_name: String,
+        assignable: Box<dyn Assign>,
         value: Box<dyn Expression>,
     },
     While {
@@ -85,12 +85,9 @@ impl Statement {
                     else_branch.output_for_line(context, record)
                 }
             }
-            Statement::Assign {
-                variable_name,
-                value,
-            } => {
+            Statement::Assign { assignable, value } => {
                 let value = value.evaluate(context, record);
-                context.assign_variable(&variable_name, value);
+                assignable.assign(context, record, value);
                 vec![]
             }
             Statement::While { condition, body } => {
@@ -174,14 +171,14 @@ fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
 fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
     map(
         tuple((
-            alpha1,
+            parse_assignable,
             multispace0,
             one_of("="),
             multispace0,
             parse_expression,
         )),
-        |(variable_name, _, _, _, value_expression)| Statement::Assign {
-            variable_name: variable_name.to_string(),
+        |(assignable, _, _, _, value_expression)| Statement::Assign {
+            assignable: assignable,
             value: value_expression,
         },
     )(input)
