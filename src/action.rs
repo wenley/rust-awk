@@ -60,6 +60,10 @@ enum Statement {
         condition: Box<dyn Expression>,
         body: Action,
     },
+    DoWhile {
+        body: Action,
+        condition: Box<dyn Expression>,
+    },
 }
 
 impl Statement {
@@ -103,6 +107,17 @@ impl Statement {
                 }
                 output
             }
+            Statement::DoWhile { body, condition } => {
+                let mut output = vec![];
+                loop {
+                    output.append(&mut body.output_for_line(context, record));
+                    let value = condition.evaluate(context, record);
+                    if !value.coercion_to_boolean() {
+                        break;
+                    }
+                }
+                output
+            }
         }
     }
 }
@@ -120,6 +135,7 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
         parse_print_statement,
         parse_if_else_statement,
         parse_while_statement,
+        parse_do_while_statement,
         parse_assign_statement,
         map(parse_expression, move |expr| Statement::Print(vec![expr])),
     ))(input)
@@ -164,6 +180,26 @@ fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
         move |(condition, body)| Statement::While {
             condition: condition,
             body: body,
+        },
+    )(input)
+}
+
+fn parse_do_while_statement(input: &str) -> IResult<&str, Statement> {
+    map(
+        tuple((
+            tag("do"),
+            multispace0,
+            parse_action,
+            multispace0,
+            tag("while"),
+            multispace0,
+            one_of("("),
+            parse_expression,
+            one_of(")"),
+        )),
+        |(_, _, body, _, _, _, _, condition, _)| Statement::DoWhile {
+            body: body,
+            condition: condition,
         },
     )(input)
 }
