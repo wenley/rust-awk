@@ -35,7 +35,10 @@ pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
 }
 
 pub(crate) fn parse_expression(input: &str) -> IResult<&str, Box<dyn Expression>> {
-    alt((regex_match::parse_regex_match, binary_math::parse_addition))(input)
+    alt((
+        regex_match::parse_regex_match,
+        binary_math::parse_binary_math_expression,
+    ))(input)
 }
 
 fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
