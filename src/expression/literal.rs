@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
     character::complete::{none_of, one_of},
-    multi::{many1},
+    multi::many1,
     re_find,
     sequence::{delimited, tuple},
     IResult,
@@ -12,9 +12,8 @@ use crate::{
     value::{parse_float_literal, parse_integer_literal, NumericValue, Value},
 };
 
-
-use regex::Regex;
 use super::Expression;
+use regex::Regex;
 
 #[derive(Debug)]
 pub(super) enum Literal {
@@ -77,8 +76,8 @@ fn parse_string_contents(input: &str) -> IResult<&str, &str> {
     re_find!(input, r#"^([^\\"]|\\.)*"#)
 }
 
-use nom::error::ParseError;
 use nom::error::ErrorKind;
+use nom::error::ParseError;
 use nom::Err;
 fn parse_regex_literal(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let (i, (_, vec, _)) = tuple((one_of("/"), many1(none_of("/")), one_of("/")))(input)?;
@@ -86,7 +85,10 @@ fn parse_regex_literal(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let result = regex::Regex::new(&vec.iter().collect::<String>());
     match result {
         Ok(r) => Result::Ok((i, Box::new(Literal::Regex(r)))),
-        Err(_) => Result::Err(Err::Error(ParseError::from_error_kind(i, ErrorKind::MapRes)))
+        Err(_) => Result::Err(Err::Error(ParseError::from_error_kind(
+            i,
+            ErrorKind::MapRes,
+        ))),
     }
 }
 

@@ -1,15 +1,12 @@
 use regex::Regex;
 
-use nom::{
-    character::complete::alpha1,
-    IResult,
-};
+use nom::{character::complete::alpha1, IResult};
 
+use super::Expression;
 use crate::{
     basic_types::{Context, Record},
     value::Value,
 };
-use super::Expression;
 
 #[derive(Debug)]
 struct Variable {
@@ -29,7 +26,12 @@ impl Expression for Variable {
 pub(super) fn parse_variable(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let (i, name) = alpha1(input)?;
 
-    Result::Ok((i, Box::new(Variable { variable_name: name.to_string() })))
+    Result::Ok((
+        i,
+        Box::new(Variable {
+            variable_name: name.to_string(),
+        }),
+    ))
 }
 
 #[cfg(test)]
@@ -54,7 +56,10 @@ mod tests {
         context.assign_variable("foo", value.clone());
 
         assert_eq!(
-            Variable { variable_name: "foo".to_string() }.evaluate(&context, &record),
+            Variable {
+                variable_name: "foo".to_string()
+            }
+            .evaluate(&context, &record),
             value,
         );
     }

@@ -5,8 +5,8 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{multispace0, one_of},
-    combinator::{map},
-    multi::{many0},
+    combinator::map,
+    multi::many0,
     sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
@@ -126,11 +126,14 @@ fn parse_regex_match(input: &str) -> IResult<&str, Box<dyn Expression>> {
         2 => true,
         _ => panic!("Unexpected regex operator length: {}", operator),
     };
-    Result::Ok((i, Box::new(ExpressionImpl::RegexMatch {
-        left: left,
-        right: right,
-        negated,
-    })))
+    Result::Ok((
+        i,
+        Box::new(ExpressionImpl::RegexMatch {
+            left: left,
+            right: right,
+            negated,
+        }),
+    ))
 }
 
 fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
@@ -145,11 +148,12 @@ fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
     map(
         pair(parse_primary, many0(parse_added_expr)),
         move |(first, mut rest)| {
-            rest.drain(0..)
-                .fold(first, |inner, next| Box::new(ExpressionImpl::AddBinary {
+            rest.drain(0..).fold(first, |inner, next| {
+                Box::new(ExpressionImpl::AddBinary {
                     left: inner,
                     right: next,
-                }))
+                })
+            })
         },
     )(input)
 }
@@ -174,8 +178,8 @@ fn parse_field_reference(input: &str) -> IResult<&str, Box<dyn Expression>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::literal::*;
+    use super::*;
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
         (
@@ -206,10 +210,8 @@ mod tests {
         record.fields = vec!["first", "second"];
 
         assert_eq!(
-            ExpressionImpl::FieldReference(Box::new(Literal::Numeric(
-                NumericValue::Integer(1)
-            )))
-            .evaluate(&context, &record),
+            ExpressionImpl::FieldReference(Box::new(Literal::Numeric(NumericValue::Integer(1))))
+                .evaluate(&context, &record),
             Value::String("first".to_string()),
         );
     }
