@@ -51,9 +51,9 @@ pub(super) fn parse_regex_match(input: &str) -> IResult<&str, Box<dyn Expression
         super::binary_math::parse_addition,
     ))(input)?;
 
-    let negated = match operator.len() {
-        1 => false,
-        2 => true,
+    let negated = match operator {
+        "~" => false,
+        "!~" => true,
         _ => panic!("Unexpected regex operator length: {}", operator),
     };
     Result::Ok((
