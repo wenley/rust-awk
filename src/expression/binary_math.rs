@@ -20,7 +20,7 @@ enum Operator {
     Subtract,
     Multiply,
     Divide,
-    // Modulo,
+    Modulo,
 }
 
 #[derive(Debug)]
@@ -93,6 +93,18 @@ impl Expression for BinaryMath {
             (Operator::Divide, NumericValue::Float(x), NumericValue::Float(y)) => {
                 Value::Numeric(NumericValue::Float(x / y))
             }
+            (Operator::Modulo, NumericValue::Integer(x), NumericValue::Integer(y)) => {
+                Value::Numeric(NumericValue::Integer(x % y))
+            }
+            (Operator::Modulo, NumericValue::Integer(x), NumericValue::Float(y)) => {
+                Value::Numeric(NumericValue::Float((x as f64) % y))
+            }
+            (Operator::Modulo, NumericValue::Float(x), NumericValue::Integer(y)) => {
+                Value::Numeric(NumericValue::Float(x % (y as f64)))
+            }
+            (Operator::Modulo, NumericValue::Float(x), NumericValue::Float(y)) => {
+                Value::Numeric(NumericValue::Float(x % y))
+            }
         }
     }
 }
@@ -133,10 +145,11 @@ fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
 fn parse_multiplication(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let parse_added_expr = pair(
         map(
-            delimited(multispace0, one_of("*/"), multispace0),
+            delimited(multispace0, one_of("*/%"), multispace0),
             |operator_char| match operator_char {
                 '*' => Operator::Multiply,
                 '/' => Operator::Divide,
+                '%' => Operator::Modulo,
                 _ => panic!("Unrecognized binary math operator {}", operator_char),
             },
         ),
@@ -215,6 +228,13 @@ mod tests {
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(2)),
+        );
+
+        let result = parse_binary_math_expression("6 % 5 * 4 / 3 % 2");
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Float(1.3333333333333333)),
         );
     }
 }
