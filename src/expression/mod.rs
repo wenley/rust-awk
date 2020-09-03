@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, multispace0, one_of},
+    character::complete::{multispace0, one_of},
     combinator::{map},
     multi::{many0},
     sequence::{delimited, pair, preceded, tuple},
@@ -17,6 +17,7 @@ use crate::{
 };
 
 mod literal;
+mod variable;
 
 pub(crate) trait Expression: Debug {
     fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value;
@@ -30,7 +31,6 @@ enum ExpressionImpl {
         left: Box<dyn Expression>,
         right: Box<dyn Expression>,
     },
-    Variable(String),
     FieldReference(Box<dyn Expression>),
     RegexMatch {
         left: Box<dyn Expression>,
@@ -65,7 +65,6 @@ impl Expression for ExpressionImpl {
                     }
                 }
             }
-            ExpressionImpl::Variable(variable_name) => context.fetch_variable(variable_name),
             ExpressionImpl::FieldReference(expression) => {
                 let value = expression.evaluate(context, record).coerce_to_numeric();
                 let unsafe_index = match value {
@@ -158,7 +157,7 @@ fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
 fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
     alt((
         literal::parse_literal,
-        parse_variable,
+        variable::parse_variable,
         parse_parens,
         parse_field_reference,
     ))(input)
@@ -166,12 +165,6 @@ fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
 
 fn parse_parens(input: &str) -> IResult<&str, Box<dyn Expression>> {
     delimited(one_of("("), parse_expression, one_of(")"))(input)
-}
-
-fn parse_variable(input: &str) -> IResult<&str, Box<dyn Expression>> {
-    let (i, name) = alpha1(input)?;
-
-    Result::Ok((i, Box::new(ExpressionImpl::Variable(name.to_string()))))
 }
 
 fn parse_field_reference(input: &str) -> IResult<&str, Box<dyn Expression>> {
@@ -192,18 +185,6 @@ mod tests {
                 fields: vec![],
             },
         )
-    }
-
-    #[test]
-    fn variables_can_evaluate() {
-        let (mut context, record) = empty_context_and_record();
-        let value = Value::Numeric(NumericValue::Integer(1));
-        context.assign_variable("foo", value.clone());
-
-        assert_eq!(
-            ExpressionImpl::Variable("foo".to_string()).evaluate(&context, &record),
-            value,
-        );
     }
 
     #[test]
