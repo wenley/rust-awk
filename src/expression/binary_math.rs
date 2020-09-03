@@ -19,7 +19,7 @@ enum Operator {
     Add,
     Subtract,
     Multiply,
-    // Divide,
+    Divide,
     // Modulo,
 }
 
@@ -76,6 +76,23 @@ impl Expression for BinaryMath {
             (Operator::Multiply, NumericValue::Float(x), NumericValue::Float(y)) => {
                 Value::Numeric(NumericValue::Float(x * y))
             }
+            (Operator::Divide, NumericValue::Integer(x), NumericValue::Integer(y)) => {
+                if x % y == 0 {
+                    Value::Numeric(NumericValue::Integer(x / y))
+                } else {
+                    // When y does not divide x, Awk switches to floating point division
+                    Value::Numeric(NumericValue::Float((x as f64) / (y as f64)))
+                }
+            }
+            (Operator::Divide, NumericValue::Integer(x), NumericValue::Float(y)) => {
+                Value::Numeric(NumericValue::Float((x as f64) / y))
+            }
+            (Operator::Divide, NumericValue::Float(x), NumericValue::Integer(y)) => {
+                Value::Numeric(NumericValue::Float(x / (y as f64)))
+            }
+            (Operator::Divide, NumericValue::Float(x), NumericValue::Float(y)) => {
+                Value::Numeric(NumericValue::Float(x / y))
+            }
         }
     }
 }
@@ -116,9 +133,10 @@ fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
 fn parse_multiplication(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let parse_added_expr = pair(
         map(
-            delimited(multispace0, one_of("*"), multispace0),
+            delimited(multispace0, one_of("*/"), multispace0),
             |operator_char| match operator_char {
                 '*' => Operator::Multiply,
+                '/' => Operator::Divide,
                 _ => panic!("Unrecognized binary math operator {}", operator_char),
             },
         ),
