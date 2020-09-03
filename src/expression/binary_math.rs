@@ -4,7 +4,7 @@ use nom::{
     character::complete::{multispace0, one_of},
     combinator::map,
     multi::many0,
-    sequence::{delimited, pair, preceded},
+    sequence::{delimited, pair},
     IResult,
 };
 
@@ -61,18 +61,24 @@ pub(super) fn parse_binary_math_expression(input: &str) -> IResult<&str, Box<dyn
 }
 
 fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
-    let parse_added_expr = preceded(
-        delimited(multispace0, one_of("+"), multispace0),
+    let parse_added_expr = pair(
+        map(
+            delimited(multispace0, one_of("+"), multispace0),
+            |operator_char| match operator_char {
+                '+' => Operator::Add,
+                _ => panic!("Unrecognized binary math operator {}", operator_char),
+            },
+        ),
         super::parse_primary,
     );
     // Why does this `map` work??
     map(
         pair(super::parse_primary, many0(parse_added_expr)),
         move |(first, mut rest)| {
-            rest.drain(0..).fold(first, |inner, next| {
+            rest.drain(0..).fold(first, |inner, (operator, next)| {
                 Box::new(BinaryMath {
                     left: inner,
-                    operator: Operator::Add,
+                    operator: operator,
                     right: next,
                 })
             })
