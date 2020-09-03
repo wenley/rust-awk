@@ -21,6 +21,7 @@ enum Operator {
     Multiply,
     Divide,
     Modulo,
+    // Exponent,
 }
 
 #[derive(Debug)]
