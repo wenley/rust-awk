@@ -5,9 +5,7 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{multispace0, one_of},
-    combinator::map,
-    multi::many0,
-    sequence::{delimited, pair, preceded, tuple},
+    sequence::{delimited, preceded, tuple},
     IResult,
 };
 
@@ -16,6 +14,7 @@ use crate::{
     value::{NumericValue, Value},
 };
 
+mod binary_math;
 mod literal;
 mod variable;
 
@@ -27,10 +26,6 @@ pub(crate) trait Expression: Debug {
 
 #[derive(Debug)]
 enum ExpressionImpl {
-    AddBinary {
-        left: Box<dyn Expression>,
-        right: Box<dyn Expression>,
-    },
     FieldReference(Box<dyn Expression>),
     RegexMatch {
         left: Box<dyn Expression>,
@@ -46,25 +41,6 @@ impl Expression for ExpressionImpl {
 
     fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
         match self {
-            ExpressionImpl::AddBinary { left, right } => {
-                match (
-                    left.evaluate(context, record).coerce_to_numeric(),
-                    right.evaluate(context, record).coerce_to_numeric(),
-                ) {
-                    (NumericValue::Integer(x), NumericValue::Integer(y)) => {
-                        Value::Numeric(NumericValue::Integer(x + y))
-                    }
-                    (NumericValue::Integer(x), NumericValue::Float(y)) => {
-                        Value::Numeric(NumericValue::Float((x as f64) + y))
-                    }
-                    (NumericValue::Float(x), NumericValue::Integer(y)) => {
-                        Value::Numeric(NumericValue::Float(x + (y as f64)))
-                    }
-                    (NumericValue::Float(x), NumericValue::Float(y)) => {
-                        Value::Numeric(NumericValue::Float(x + y))
-                    }
-                }
-            }
             ExpressionImpl::FieldReference(expression) => {
                 let value = expression.evaluate(context, record).coerce_to_numeric();
                 let unsafe_index = match value {
@@ -110,15 +86,15 @@ impl Expression for ExpressionImpl {
 /// until we reach literals and the parenthesized expressions.
 
 pub(crate) fn parse_expression(input: &str) -> IResult<&str, Box<dyn Expression>> {
-    alt((parse_regex_match, parse_addition))(input)
+    alt((parse_regex_match, binary_math::parse_addition))(input)
 }
 
 // Regex matching does not associate
 fn parse_regex_match(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let (i, (left, operator, right)) = tuple((
-        parse_addition,
+        binary_math::parse_addition,
         delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
-        parse_addition,
+        binary_math::parse_addition,
     ))(input)?;
 
     let negated = match operator.len() {
@@ -134,28 +110,6 @@ fn parse_regex_match(input: &str) -> IResult<&str, Box<dyn Expression>> {
             negated,
         }),
     ))
-}
-
-fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
-    let parse_added_expr = map(
-        pair(
-            delimited(multispace0, one_of("+"), multispace0),
-            parse_primary,
-        ),
-        |(_, rhs)| rhs,
-    );
-    // Why does this `map` work??
-    map(
-        pair(parse_primary, many0(parse_added_expr)),
-        move |(first, mut rest)| {
-            rest.drain(0..).fold(first, |inner, next| {
-                Box::new(ExpressionImpl::AddBinary {
-                    left: inner,
-                    right: next,
-                })
-            })
-        },
-    )(input)
 }
 
 fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
@@ -189,19 +143,6 @@ mod tests {
                 fields: vec![],
             },
         )
-    }
-
-    #[test]
-    fn binary_expressions_can_evaluate() {
-        let (context, record) = empty_context_and_record();
-        assert_eq!(
-            ExpressionImpl::AddBinary {
-                left: Box::new(Literal::Numeric(NumericValue::Integer(2))),
-                right: Box::new(Literal::Numeric(NumericValue::Integer(3))),
-            }
-            .evaluate(&context, &record),
-            Value::Numeric(NumericValue::Integer(5)),
-        );
     }
 
     #[test]
