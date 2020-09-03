@@ -52,7 +52,18 @@ impl Expression for BinaryMath {
             (Operator::Add, NumericValue::Float(x), NumericValue::Float(y)) => {
                 Value::Numeric(NumericValue::Float(x + y))
             }
-            _ => panic!("Unsupported evaluation"),
+            (Operator::Subtract, NumericValue::Integer(x), NumericValue::Integer(y)) => {
+                Value::Numeric(NumericValue::Integer(x - y))
+            }
+            (Operator::Subtract, NumericValue::Integer(x), NumericValue::Float(y)) => {
+                Value::Numeric(NumericValue::Float((x as f64) - y))
+            }
+            (Operator::Subtract, NumericValue::Float(x), NumericValue::Integer(y)) => {
+                Value::Numeric(NumericValue::Float(x - (y as f64)))
+            }
+            (Operator::Subtract, NumericValue::Float(x), NumericValue::Float(y)) => {
+                Value::Numeric(NumericValue::Float(x - y))
+            }
         }
     }
 }
