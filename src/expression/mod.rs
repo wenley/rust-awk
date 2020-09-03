@@ -20,11 +20,19 @@ pub(crate) trait Expression: Debug {
     fn regex<'a>(&'a self) -> Option<&'a Regex>;
 }
 
+pub(crate) trait Assign: Debug {
+    fn assign<'a>(&self, context: &mut Context, record: &'a Record, value: Value);
+}
+
 /// Tiers of parsing
 ///
 /// The top-level parser is responsible for the loosest-binding / lowest-precedence
 /// operators. As we descend the levels, we encounter tighter-binding operators
 /// until we reach literals and the parenthesized expressions.
+
+pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
+    variable::parse_assignable_variable(input)
+}
 
 pub(crate) fn parse_expression(input: &str) -> IResult<&str, Box<dyn Expression>> {
     alt((regex_match::parse_regex_match, binary_math::parse_addition))(input)
