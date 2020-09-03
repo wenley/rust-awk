@@ -201,5 +201,20 @@ mod tests {
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(14)),
         );
+
+        let result = parse_binary_math_expression("6 / 5 * 4 / 3");
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            // Floating point error!
+            Value::Numeric(NumericValue::Float(1.5999999999999999)),
+        );
+
+        let result = parse_binary_math_expression("6 / 3");
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(2)),
+        );
     }
 }
