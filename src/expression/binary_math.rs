@@ -163,5 +163,12 @@ mod tests {
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Float(-1.5)),
         );
+
+        let result = parse_binary_math_expression("1 * 2 + 3 * 4");
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(14)),
+        );
     }
 }
