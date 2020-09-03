@@ -17,7 +17,7 @@ use crate::{
 #[derive(Debug)]
 enum Operator {
     Add,
-    // Subtract,
+    Subtract,
     // Multiply,
     // Divide,
     // Modulo,
@@ -52,6 +52,7 @@ impl Expression for BinaryMath {
             (Operator::Add, NumericValue::Float(x), NumericValue::Float(y)) => {
                 Value::Numeric(NumericValue::Float(x + y))
             }
+            _ => panic!("Unsupported evaluation"),
         }
     }
 }
@@ -63,9 +64,10 @@ pub(super) fn parse_binary_math_expression(input: &str) -> IResult<&str, Box<dyn
 fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let parse_added_expr = pair(
         map(
-            delimited(multispace0, one_of("+"), multispace0),
+            delimited(multispace0, one_of("+-"), multispace0),
             |operator_char| match operator_char {
                 '+' => Operator::Add,
+                '-' => Operator::Subtract,
                 _ => panic!("Unrecognized binary math operator {}", operator_char),
             },
         ),
