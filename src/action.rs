@@ -301,6 +301,23 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_do_while_statement() {
+        let (mut context, record) = empty_context_and_record();
+        let result = parse_simple_statement(
+            r#"do {
+                print("hello");
+            } while (0)"#,
+        );
+        assert!(result.is_ok());
+        assert_eq!(
+            Action {
+                statements: vec![result.unwrap().1]
+            }
+            .output_for_line(&mut context, &record),
+            vec!["hello"],
+        );
+    }
+    #[test]
     fn test_parse_assign_statement() {
         let (mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(r#"variable = "hi""#);
