@@ -18,7 +18,7 @@ use crate::{
 enum Operator {
     Add,
     Subtract,
-    // Multiply,
+    Multiply,
     // Divide,
     // Modulo,
 }
@@ -64,6 +64,7 @@ impl Expression for BinaryMath {
             (Operator::Subtract, NumericValue::Float(x), NumericValue::Float(y)) => {
                 Value::Numeric(NumericValue::Float(x - y))
             }
+            _ => panic!("Unsupported operator"),
         }
     }
 }
@@ -82,9 +83,34 @@ fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
                 _ => panic!("Unrecognized binary math operator {}", operator_char),
             },
         ),
-        super::parse_primary,
+        parse_multiplication,
     );
     // Why does this `map` work??
+    map(
+        pair(parse_multiplication, many0(parse_added_expr)),
+        move |(first, mut rest)| {
+            rest.drain(0..).fold(first, |inner, (operator, next)| {
+                Box::new(BinaryMath {
+                    left: inner,
+                    operator: operator,
+                    right: next,
+                })
+            })
+        },
+    )(input)
+}
+
+fn parse_multiplication(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    let parse_added_expr = pair(
+        map(
+            delimited(multispace0, one_of("*"), multispace0),
+            |operator_char| match operator_char {
+                '*' => Operator::Multiply,
+                _ => panic!("Unrecognized binary math operator {}", operator_char),
+            },
+        ),
+        super::parse_primary,
+    );
     map(
         pair(super::parse_primary, many0(parse_added_expr)),
         move |(first, mut rest)| {
