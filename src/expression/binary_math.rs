@@ -56,7 +56,11 @@ impl Expression for BinaryMath {
     }
 }
 
-pub(super) fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
+pub(super) fn parse_binary_math_expression(input: &str) -> IResult<&str, Box<dyn Expression>> {
+    parse_addition(input)
+}
+
+fn parse_addition(input: &str) -> IResult<&str, Box<dyn Expression>> {
     let parse_added_expr = preceded(
         delimited(multispace0, one_of("+"), multispace0),
         super::parse_primary,
