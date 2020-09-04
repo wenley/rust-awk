@@ -1,4 +1,6 @@
-use nom::{combinator::map, multi::many1, sequence::pair, IResult};
+use nom::{
+    character::complete::multispace0, combinator::map, multi::many1, sequence::tuple, IResult,
+};
 
 use crate::{
     action::{parse_action, Action},
@@ -43,8 +45,8 @@ pub(crate) fn parse_item_list(input: &str) -> IResult<&str, Vec<Item>> {
 
 fn parse_item(input: &str) -> IResult<&str, Item> {
     map(
-        pair(parse_item_pattern, parse_action),
-        |(pattern, action)| Item {
+        tuple((parse_item_pattern, multispace0, parse_action)),
+        |(pattern, _, action)| Item {
             pattern: pattern,
             action: action,
         },
