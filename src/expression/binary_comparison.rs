@@ -157,7 +157,7 @@ mod tests {
             Value::Numeric(NumericValue::Integer(1)),
         );
 
-        let result = parser("2 < 1");
+        let result = parser("1 > 2");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
@@ -177,7 +177,7 @@ mod tests {
             Value::Numeric(NumericValue::Integer(1)),
         );
 
-        let result = parser(r#""A" < "a""#);
+        let result = parser(r#""A" <= "a""#);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
@@ -196,6 +196,13 @@ mod tests {
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(0)),
+        );
+
+        let result = parser(r#""1" == 1"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
         );
     }
 }
