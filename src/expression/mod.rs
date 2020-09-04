@@ -37,10 +37,19 @@ pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
 }
 
 pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
-    alt((
-        regex_match::regex_parser(binary_math::parse_binary_math_expression),
-        binary_math::parse_binary_math_expression,
-    ))(input)
+    // Descending order of precedence
+    let multiplication_parser = binary_math::multiplication_parser(parse_primary);
+    let addition_parser = binary_math::addition_parser(|i| multiplication_parser(i));
+    let regex_parser = regex_match::regex_parser(|i| addition_parser(i));
+
+    // Ascending order of precedence
+    let parser = alt((
+        |i| regex_parser(i),
+        |i| addition_parser(i),
+        |i| multiplication_parser(i),
+    ));
+
+    parser(input)
 }
 
 fn parse_primary(input: &str) -> ExpressionParseResult {
