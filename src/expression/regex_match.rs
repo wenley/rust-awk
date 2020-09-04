@@ -6,10 +6,9 @@ use nom::{
     bytes::complete::tag,
     character::complete::multispace0,
     sequence::{delimited, tuple},
-    IResult,
 };
 
-use super::Expression;
+use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::{Context, Record},
     value::{NumericValue, Value},
@@ -44,7 +43,7 @@ impl Expression for RegexMatch {
 }
 
 // Regex matching does not associate
-pub(super) fn parse_regex_match(input: &str) -> IResult<&str, Box<dyn Expression>> {
+pub(super) fn parse_regex_match(input: &str) -> ExpressionParseResult {
     let (i, (left, operator, right)) = tuple((
         super::binary_math::parse_binary_math_expression,
         delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
