@@ -80,4 +80,31 @@ mod tests {
             },
         )
     }
+
+    #[test]
+    fn test_and_parsing() {
+        let (context, record) = empty_context_and_record();
+        let parser = and_parser(parse_literal);
+
+        let result = parser(r#""a" && 1"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
+        );
+
+        let result = parser(r#""a" && 0"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(0)),
+        );
+
+        let result = parser(r#""" && 1"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(0)),
+        );
+    }
 }
