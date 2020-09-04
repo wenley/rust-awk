@@ -61,6 +61,17 @@ impl Expression for BinaryComparison {
     }
 }
 
+pub(super) fn comparison_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        alt((definite_comparison_parser(|i| next_parser(i)), |i| {
+            next_parser(i)
+        }))(input)
+    }
+}
+
 fn definite_comparison_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
 where
     F: Fn(&str) -> ExpressionParseResult,
@@ -88,12 +99,8 @@ where
     }
 }
 
-pub(super) fn parse_binary_comparison(input: &str) -> ExpressionParseResult {
-    alt((parse_definite_comparison, super::literal::parse_literal))(input)
-}
-
-fn parse_definite_comparison(input: &str) -> ExpressionParseResult {
-    definite_comparison_parser(super::literal::parse_literal)(input)
+fn parse_binary_comparison(input: &str) -> ExpressionParseResult {
+    comparison_parser(super::literal::parse_literal)(input)
 }
 
 #[cfg(test)]
