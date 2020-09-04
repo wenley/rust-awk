@@ -76,11 +76,18 @@ where
             })(input)?;
 
         // Collapse nested negations for efficiency
-        let expression = if nestings % 2 == 0 {
+        let expression = if nestings == 0 {
             inner_expression
-        } else {
+        } else if nestings % 2 == 1 {
             Box::new(NotBoolean {
                 expression: inner_expression,
+            })
+        } else {
+            // Still need to coerce to {0,1} if the value was something else
+            Box::new(NotBoolean {
+                expression: Box::new(NotBoolean {
+                    expression: inner_expression,
+                }),
             })
         };
         Result::Ok((i, expression))
@@ -243,6 +250,26 @@ mod tests {
         );
 
         let result = parser(r#"!!!!!0"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
+        );
+    }
+
+    #[test]
+    fn test_iteration_compression() {
+        let (context, record) = empty_context_and_record();
+        let parser = not_parser(parse_literal);
+
+        let result = parser(r#""abc""#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::String("abc".to_string()),
+        );
+
+        let result = parser(r#"!!"abc""#);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
