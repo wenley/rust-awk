@@ -54,10 +54,6 @@ where
     }
 }
 
-pub(super) fn parse_field_reference(input: &str) -> ExpressionParseResult {
-    field_reference_parser(super::parse_primary)(input)
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::literal::*;
@@ -90,7 +86,9 @@ mod tests {
     #[test]
     fn test_parse_field_reference() {
         let (context, mut record) = empty_context_and_record();
-        let result = parse_field_reference("$1");
+        let parser = field_reference_parser(parse_literal);
+
+        let result = parser("$1");
         assert_eq!(result.is_ok(), true);
         let expression = result.unwrap().1;
         assert_eq!(expression.evaluate(&context, &record), Value::Uninitialized,);
