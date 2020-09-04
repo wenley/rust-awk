@@ -24,6 +24,8 @@ pub(crate) trait Assign: Debug {
     fn assign<'a>(&self, context: &mut Context, record: &'a Record, value: Value);
 }
 
+type ExpressionResult<'a> = IResult<&'a str, Box<dyn Expression>>;
+
 /// Tiers of parsing
 ///
 /// The top-level parser is responsible for the loosest-binding / lowest-precedence
@@ -34,14 +36,14 @@ pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
     variable::parse_assignable_variable(input)
 }
 
-pub(crate) fn parse_expression(input: &str) -> IResult<&str, Box<dyn Expression>> {
+pub(crate) fn parse_expression(input: &str) -> ExpressionResult {
     alt((
         regex_match::parse_regex_match,
         binary_math::parse_binary_math_expression,
     ))(input)
 }
 
-fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
+fn parse_primary(input: &str) -> ExpressionResult {
     alt((
         literal::parse_literal,
         variable::parse_variable,
@@ -50,7 +52,7 @@ fn parse_primary(input: &str) -> IResult<&str, Box<dyn Expression>> {
     ))(input)
 }
 
-fn parse_parens(input: &str) -> IResult<&str, Box<dyn Expression>> {
+fn parse_parens(input: &str) -> ExpressionResult {
     delimited(one_of("("), parse_expression, one_of(")"))(input)
 }
 
