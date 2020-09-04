@@ -99,4 +99,19 @@ mod tests {
             Value::String("hello".to_string()),
         );
     }
+
+    #[test]
+    // fn test_nested_field_references() {
+    //     let (context, mut record) = empty_context_and_record();
+    //     record.fields = vec!["2", "3", "hello"];
+
+    //     let parser = field_reference_parser(parse_literal);
+    //     let result = parser("$$$1");
+    //     assert!(result.is_ok(), true);
+    //     let expression = result.unwrap().1;
+    //     assert_eq!(
+    //         expression.evaluate(&context, &record),
+    //         Value::String("hello".to_string()),
+    //     );
+    // }
 }
