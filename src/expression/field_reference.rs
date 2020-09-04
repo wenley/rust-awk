@@ -1,7 +1,11 @@
 use regex::Regex;
 use std::fmt::Debug;
 
-use nom::{character::complete::one_of, multi::many0, sequence::pair};
+use nom::{
+    character::complete::{multispace0, one_of},
+    multi::many0,
+    sequence::{pair, terminated},
+};
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
@@ -46,7 +50,9 @@ where
 {
     move |input: &str| {
         let (i, (references, inner_expression)) =
-            pair(many0(one_of("$")), |i| next_parser(i))(input)?;
+            pair(many0(terminated(one_of("$"), multispace0)), |i| {
+                next_parser(i)
+            })(input)?;
         let expression = references.iter().fold(inner_expression, |inner, _| {
             Box::new(FieldReference { expression: inner })
         });
@@ -96,6 +102,13 @@ mod tests {
         record.fields = vec!["hello"];
         assert_eq!(
             expression.evaluate(&context, &record),
+            Value::String("hello".to_string()),
+        );
+
+        let result = parser("$     1");
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
             Value::String("hello".to_string()),
         );
     }
