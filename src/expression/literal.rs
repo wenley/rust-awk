@@ -12,7 +12,7 @@ use crate::{
     value::{parse_float_literal, parse_integer_literal, NumericValue, Value},
 };
 
-use super::{Expression, ExpressionResult};
+use super::{Expression, ExpressionParseResult};
 use regex::Regex;
 
 #[derive(Debug)]
@@ -47,7 +47,7 @@ impl Expression for Literal {
     }
 }
 
-pub(super) fn parse_literal(input: &str) -> ExpressionResult {
+pub(super) fn parse_literal(input: &str) -> ExpressionParseResult {
     alt((
         parse_string_literal,
         parse_regex_literal,
@@ -55,13 +55,13 @@ pub(super) fn parse_literal(input: &str) -> ExpressionResult {
     ))(input)
 }
 
-fn parse_number_literal(input: &str) -> ExpressionResult {
+fn parse_number_literal(input: &str) -> ExpressionParseResult {
     let (i, number) = alt((parse_float_literal, parse_integer_literal))(input)?;
 
     Result::Ok((i, Box::new(Literal::Numeric(number))))
 }
 
-fn parse_string_literal(input: &str) -> ExpressionResult {
+fn parse_string_literal(input: &str) -> ExpressionParseResult {
     let (i, contents) = delimited(one_of("\""), parse_string_contents, one_of("\""))(input)?;
 
     Result::Ok((i, Box::new(Literal::String(contents.to_string()))))
@@ -79,7 +79,7 @@ fn parse_string_contents(input: &str) -> IResult<&str, &str> {
 use nom::error::ErrorKind;
 use nom::error::ParseError;
 use nom::Err;
-fn parse_regex_literal(input: &str) -> ExpressionResult {
+fn parse_regex_literal(input: &str) -> ExpressionParseResult {
     let (i, (_, vec, _)) = tuple((one_of("/"), many1(none_of("/")), one_of("/")))(input)?;
 
     let result = regex::Regex::new(&vec.iter().collect::<String>());

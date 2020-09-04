@@ -7,7 +7,7 @@ use nom::{
     sequence::{delimited, pair},
 };
 
-use super::{Expression, ExpressionResult};
+use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::{Context, Record},
     value::{NumericValue, Value},
@@ -109,11 +109,11 @@ impl Expression for BinaryMath {
     }
 }
 
-pub(super) fn parse_binary_math_expression(input: &str) -> ExpressionResult {
+pub(super) fn parse_binary_math_expression(input: &str) -> ExpressionParseResult {
     parse_addition(input)
 }
 
-fn parse_addition(input: &str) -> ExpressionResult {
+fn parse_addition(input: &str) -> ExpressionParseResult {
     let parse_added_expr = pair(
         map(
             delimited(multispace0, one_of("+-"), multispace0),
@@ -142,7 +142,7 @@ fn parse_addition(input: &str) -> ExpressionResult {
 
 // Since multiplication is a higher precedence, it is lower level -> gets to consume characters
 // first
-fn parse_multiplication(input: &str) -> ExpressionResult {
+fn parse_multiplication(input: &str) -> ExpressionParseResult {
     let parse_added_expr = pair(
         map(
             delimited(multispace0, one_of("*/%"), multispace0),

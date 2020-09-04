@@ -24,7 +24,7 @@ pub(crate) trait Assign: Debug {
     fn assign<'a>(&self, context: &mut Context, record: &'a Record, value: Value);
 }
 
-type ExpressionResult<'a> = IResult<&'a str, Box<dyn Expression>>;
+type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;
 
 /// Tiers of parsing
 ///
@@ -36,14 +36,14 @@ pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
     variable::parse_assignable_variable(input)
 }
 
-pub(crate) fn parse_expression(input: &str) -> ExpressionResult {
+pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
     alt((
         regex_match::parse_regex_match,
         binary_math::parse_binary_math_expression,
     ))(input)
 }
 
-fn parse_primary(input: &str) -> ExpressionResult {
+fn parse_primary(input: &str) -> ExpressionParseResult {
     alt((
         literal::parse_literal,
         variable::parse_variable,
@@ -52,7 +52,7 @@ fn parse_primary(input: &str) -> ExpressionResult {
     ))(input)
 }
 
-fn parse_parens(input: &str) -> ExpressionResult {
+fn parse_parens(input: &str) -> ExpressionParseResult {
     delimited(one_of("("), parse_expression, one_of(")"))(input)
 }
 
