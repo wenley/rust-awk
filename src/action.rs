@@ -151,14 +151,30 @@ fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
-    let parse_if_open = tuple((tag("if"), multispace0, one_of("("), multispace0));
-    let parse_if_close = tuple((multispace0, one_of(")"), multispace0));
-    let parse_else_open = tuple((multispace0, tag("else"), multispace0));
-    let parse_if = delimited(parse_if_open, parse_expression, parse_if_close);
+    let parse_if = map(
+        tuple((
+            tag("if"),
+            multispace0,
+            one_of("("),
+            multispace0,
+            parse_expression,
+            multispace0,
+            one_of(")"),
+        )),
+        |(_, _, _, _, expression, _, _)| expression,
+    );
 
     map(
-        tuple((parse_if, parse_action, parse_else_open, parse_action)),
-        move |(condition, if_branch, _, else_branch)| Statement::IfElse {
+        tuple((
+            parse_if,
+            multispace0,
+            parse_action,
+            multispace0,
+            tag("else"),
+            multispace0,
+            parse_action,
+        )),
+        move |(condition, _, if_branch, _, _, _, else_branch)| Statement::IfElse {
             condition: condition,
             if_branch: if_branch,
             else_branch: else_branch,
