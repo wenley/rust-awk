@@ -10,6 +10,7 @@ use crate::{
 
 mod binary_comparison;
 mod binary_math;
+mod boolean;
 mod field_reference;
 mod literal;
 mod regex_match;
@@ -40,12 +41,15 @@ pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
 pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
     // Descending order of precedence
     let field_reference_parser = field_reference::field_reference_parser(parse_primary);
-    let multiplication_parser = binary_math::multiplication_parser(field_reference_parser);
+    let not_parser = boolean::not_parser(field_reference_parser);
+    let multiplication_parser = binary_math::multiplication_parser(not_parser);
     let addition_parser = binary_math::addition_parser(multiplication_parser);
     let comparison_parser = binary_comparison::comparison_parser(addition_parser);
     let regex_parser = regex_match::regex_parser(comparison_parser);
+    let and_parser = boolean::and_parser(regex_parser);
+    let or_parser = boolean::or_parser(and_parser);
 
-    regex_parser(input)
+    or_parser(input)
 }
 
 fn parse_primary(input: &str) -> ExpressionParseResult {
@@ -91,6 +95,32 @@ mod tests {
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Float(3.5))
+        );
+    }
+
+    #[test]
+    fn test_boolean_precedence() {
+        let (context, record) = empty_context_and_record();
+
+        let result = parse_expression("1 && 1 || 0 && 1");
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1))
+        );
+
+        let result = parse_expression("1 && 0 || 0 && 1");
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(0))
+        );
+
+        let result = parse_expression("0 || 1 && 0 || 1");
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1))
         );
     }
 }
