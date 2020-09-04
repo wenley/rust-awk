@@ -1,4 +1,10 @@
-use nom::{combinator::map, multi::many1, sequence::pair, IResult};
+use nom::{
+    character::complete::multispace0,
+    combinator::map,
+    multi::many1,
+    sequence::{delimited, tuple},
+    IResult,
+};
 
 use crate::{
     action::{parse_action, Action},
@@ -38,13 +44,13 @@ impl Item {
 }
 
 pub(crate) fn parse_item_list(input: &str) -> IResult<&str, Vec<Item>> {
-    many1(parse_item)(input)
+    many1(delimited(multispace0, parse_item, multispace0))(input)
 }
 
 fn parse_item(input: &str) -> IResult<&str, Item> {
     map(
-        pair(parse_item_pattern, parse_action),
-        |(pattern, action)| Item {
+        tuple((parse_item_pattern, multispace0, parse_action)),
+        |(pattern, _, action)| Item {
             pattern: pattern,
             action: action,
         },
@@ -54,10 +60,6 @@ fn parse_item(input: &str) -> IResult<&str, Item> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        basic_types::Record,
-        value::{NumericValue, Value},
-    };
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
         (
@@ -70,67 +72,33 @@ mod tests {
     }
 
     #[test]
-    fn print_statement_produces_value() {
-        let (mut empty_context, record) = empty_context_and_record();
-        let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
-        assert_eq!(
-            print_action.output_for_line(&mut empty_context, &record),
-            vec!["hello"],
-        );
-    }
+    fn test_full_item_parsing() {
+        let (mut context, _) = empty_context_and_record();
+        let record = Record {
+            full_line: "hello world today",
+            fields: vec!["hello", "world", "today"],
+        };
+        let empty_string_vec: Vec<&'static str> = vec![];
 
-    #[test]
-    fn if_produces_correct_value() {
-        let (mut empty_context, record) = empty_context_and_record();
-
-        let if_conditional = parse_action(
-            r#"{
-            if ("not empty") {
-                print("if-branch");
-            } else {
-                print("else");
-            };
-        }"#,
-        )
-        .unwrap()
-        .1;
+        let result = parse_item(r#"$1 ~ "hello" { print($0); }"#);
+        assert!(result.is_ok());
         assert_eq!(
-            if_conditional.output_for_line(&mut empty_context, &record),
-            vec!["if-branch"],
+            result.unwrap().1.output_for_line(&mut context, &record),
+            vec!["hello world today"],
         );
 
-        let else_conditional = parse_action(
-            r#"{
-            if ("") {
-                print("if-branch");
-            } else {
-                print("else");
-            };
-        }"#,
-        )
-        .unwrap()
-        .1;
+        let result = parse_item(r#"$2 ~ "hello" { print($0); }"#);
+        assert!(result.is_ok());
         assert_eq!(
-            else_conditional.output_for_line(&mut empty_context, &record),
-            vec!["else"],
+            result.unwrap().1.output_for_line(&mut context, &record),
+            empty_string_vec,
         );
-    }
 
-    #[test]
-    fn assignment_updates_context() {
-        let (mut context, record) = empty_context_and_record();
-
-        let assign_action = parse_action(
-            r#"{
-            foo = 1 + 2;
-        }"#,
-        )
-        .unwrap()
-        .1;
-        assign_action.output_for_line(&mut context, &record);
+        let result = parse_item(r#"11 ~ 1 { print($3); }"#);
+        assert!(result.is_ok());
         assert_eq!(
-            context.fetch_variable("foo"),
-            Value::Numeric(NumericValue::Integer(3)),
+            result.unwrap().1.output_for_line(&mut context, &record),
+            vec!["today"],
         );
     }
 }

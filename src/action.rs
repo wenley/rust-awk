@@ -151,14 +151,30 @@ fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
-    let parse_if_open = tuple((tag("if"), multispace0, one_of("("), multispace0));
-    let parse_if_close = tuple((multispace0, one_of(")"), multispace0));
-    let parse_else_open = tuple((multispace0, tag("else"), multispace0));
-    let parse_if = delimited(parse_if_open, parse_expression, parse_if_close);
+    let parse_if = map(
+        tuple((
+            tag("if"),
+            multispace0,
+            one_of("("),
+            multispace0,
+            parse_expression,
+            multispace0,
+            one_of(")"),
+        )),
+        |(_, _, _, _, expression, _, _)| expression,
+    );
 
     map(
-        tuple((parse_if, parse_action, parse_else_open, parse_action)),
-        move |(condition, if_branch, _, else_branch)| Statement::IfElse {
+        tuple((
+            parse_if,
+            multispace0,
+            parse_action,
+            multispace0,
+            tag("else"),
+            multispace0,
+            parse_action,
+        )),
+        move |(condition, _, if_branch, _, _, _, else_branch)| Statement::IfElse {
             condition: condition,
             if_branch: if_branch,
             else_branch: else_branch,
@@ -167,17 +183,19 @@ fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
-    let parse_while_condition_open = tuple((tag("while"), multispace0, one_of("("), multispace0));
-    let parse_while_condition_close = tuple((multispace0, one_of(")"), multispace0));
-    let parse_while_condition = delimited(
-        parse_while_condition_open,
-        parse_expression,
-        parse_while_condition_close,
-    );
-
     map(
-        tuple((parse_while_condition, parse_action)),
-        move |(condition, body)| Statement::While {
+        tuple((
+            tag("while"),
+            multispace0,
+            one_of("("),
+            multispace0,
+            parse_expression,
+            multispace0,
+            one_of(")"),
+            multispace0,
+            parse_action,
+        )),
+        move |(_, _, _, _, condition, _, _, _, body)| Statement::While {
             condition: condition,
             body: body,
         },
@@ -223,6 +241,7 @@ fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::value::{NumericValue, Value};
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
         (
@@ -232,6 +251,71 @@ mod tests {
                 fields: vec![],
             },
         )
+    }
+
+    #[test]
+    fn print_statement_produces_value() {
+        let (mut empty_context, record) = empty_context_and_record();
+        let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
+        assert_eq!(
+            print_action.output_for_line(&mut empty_context, &record),
+            vec!["hello"],
+        );
+    }
+
+    #[test]
+    fn if_produces_correct_value() {
+        let (mut empty_context, record) = empty_context_and_record();
+
+        let if_conditional = parse_action(
+            r#"{
+            if ("not empty") {
+                print("if-branch");
+            } else {
+                print("else");
+            };
+        }"#,
+        )
+        .unwrap()
+        .1;
+        assert_eq!(
+            if_conditional.output_for_line(&mut empty_context, &record),
+            vec!["if-branch"],
+        );
+
+        let else_conditional = parse_action(
+            r#"{
+            if ("") {
+                print("if-branch");
+            } else {
+                print("else");
+            };
+        }"#,
+        )
+        .unwrap()
+        .1;
+        assert_eq!(
+            else_conditional.output_for_line(&mut empty_context, &record),
+            vec!["else"],
+        );
+    }
+
+    #[test]
+    fn assignment_updates_context() {
+        let (mut context, record) = empty_context_and_record();
+
+        let assign_action = parse_action(
+            r#"{
+            foo = 1 + 2;
+        }"#,
+        )
+        .unwrap()
+        .1;
+        assign_action.output_for_line(&mut context, &record);
+        assert_eq!(
+            context.fetch_variable("foo"),
+            Value::Numeric(NumericValue::Integer(3)),
+        );
     }
 
     #[test]
