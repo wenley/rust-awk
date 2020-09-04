@@ -10,6 +10,7 @@ use crate::{
 
 mod binary_comparison;
 mod binary_math;
+mod boolean;
 mod field_reference;
 mod literal;
 mod regex_match;
