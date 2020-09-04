@@ -110,7 +110,7 @@ impl Expression for BinaryMath {
 }
 
 pub(super) fn parse_binary_math_expression(input: &str) -> ExpressionParseResult {
-    addition_parser(parse_multiplication)(input)
+    addition_parser(multiplication_parser(super::parse_primary))(input)
 }
 
 pub(super) fn addition_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
@@ -147,31 +147,36 @@ where
 
 // Since multiplication is a higher precedence, it is lower level -> gets to consume characters
 // first
-fn parse_multiplication(input: &str) -> ExpressionParseResult {
-    let parse_added_expr = pair(
+pub(super) fn multiplication_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let parse_added_expr = pair(
+            map(
+                delimited(multispace0, one_of("*/%"), multispace0),
+                |operator_char| match operator_char {
+                    '*' => Operator::Multiply,
+                    '/' => Operator::Divide,
+                    '%' => Operator::Modulo,
+                    _ => panic!("Unrecognized binary math operator {}", operator_char),
+                },
+            ),
+            |i| next_parser(i),
+        );
         map(
-            delimited(multispace0, one_of("*/%"), multispace0),
-            |operator_char| match operator_char {
-                '*' => Operator::Multiply,
-                '/' => Operator::Divide,
-                '%' => Operator::Modulo,
-                _ => panic!("Unrecognized binary math operator {}", operator_char),
-            },
-        ),
-        super::parse_primary,
-    );
-    map(
-        pair(super::parse_primary, many0(parse_added_expr)),
-        move |(first, mut rest)| {
-            rest.drain(0..).fold(first, |inner, (operator, next)| {
-                Box::new(BinaryMath {
-                    left: inner,
-                    operator: operator,
-                    right: next,
+            pair(|i| next_parser(i), many0(parse_added_expr)),
+            move |(first, mut rest)| {
+                rest.drain(0..).fold(first, |inner, (operator, next)| {
+                    Box::new(BinaryMath {
+                        left: inner,
+                        operator: operator,
+                        right: next,
+                    })
                 })
-            })
-        },
-    )(input)
+            },
+        )(input)
+    }
 }
 
 #[cfg(test)]
