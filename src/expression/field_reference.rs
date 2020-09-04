@@ -1,9 +1,9 @@
 use regex::Regex;
 use std::fmt::Debug;
 
-use nom::{character::complete::one_of, sequence::preceded, IResult};
+use nom::{character::complete::one_of, sequence::preceded};
 
-use super::Expression;
+use super::{Expression, ExpressionResult};
 use crate::{
     basic_types::{Context, Record},
     value::{NumericValue, Value},
@@ -40,7 +40,7 @@ impl Expression for FieldReference {
     }
 }
 
-pub(super) fn parse_field_reference(input: &str) -> IResult<&str, Box<dyn Expression>> {
+pub(super) fn parse_field_reference(input: &str) -> ExpressionResult {
     let (i, expr) = preceded(one_of("$"), super::parse_expression)(input)?;
     Result::Ok((i, Box::new(FieldReference { expression: expr })))
 }

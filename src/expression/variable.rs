@@ -2,7 +2,7 @@ use regex::Regex;
 
 use nom::{character::complete::alpha1, IResult};
 
-use super::{Assign, Expression};
+use super::{Assign, Expression, ExpressionResult};
 use crate::{
     basic_types::{Context, Record},
     value::Value,
@@ -29,7 +29,7 @@ impl Assign for Variable {
     }
 }
 
-pub(super) fn parse_variable(input: &str) -> IResult<&str, Box<dyn Expression>> {
+pub(super) fn parse_variable(input: &str) -> ExpressionResult {
     let (i, name) = alpha1(input)?;
 
     Result::Ok((
