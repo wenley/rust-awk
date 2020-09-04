@@ -241,6 +241,7 @@ fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::value::{NumericValue, Value};
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
         (
@@ -250,6 +251,71 @@ mod tests {
                 fields: vec![],
             },
         )
+    }
+
+    #[test]
+    fn print_statement_produces_value() {
+        let (mut empty_context, record) = empty_context_and_record();
+        let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
+        assert_eq!(
+            print_action.output_for_line(&mut empty_context, &record),
+            vec!["hello"],
+        );
+    }
+
+    #[test]
+    fn if_produces_correct_value() {
+        let (mut empty_context, record) = empty_context_and_record();
+
+        let if_conditional = parse_action(
+            r#"{
+            if ("not empty") {
+                print("if-branch");
+            } else {
+                print("else");
+            };
+        }"#,
+        )
+        .unwrap()
+        .1;
+        assert_eq!(
+            if_conditional.output_for_line(&mut empty_context, &record),
+            vec!["if-branch"],
+        );
+
+        let else_conditional = parse_action(
+            r#"{
+            if ("") {
+                print("if-branch");
+            } else {
+                print("else");
+            };
+        }"#,
+        )
+        .unwrap()
+        .1;
+        assert_eq!(
+            else_conditional.output_for_line(&mut empty_context, &record),
+            vec!["else"],
+        );
+    }
+
+    #[test]
+    fn assignment_updates_context() {
+        let (mut context, record) = empty_context_and_record();
+
+        let assign_action = parse_action(
+            r#"{
+            foo = 1 + 2;
+        }"#,
+        )
+        .unwrap()
+        .1;
+        assign_action.output_for_line(&mut context, &record);
+        assert_eq!(
+            context.fetch_variable("foo"),
+            Value::Numeric(NumericValue::Integer(3)),
+        );
     }
 
     #[test]
