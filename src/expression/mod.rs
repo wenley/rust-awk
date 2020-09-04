@@ -8,6 +8,7 @@ use crate::{
     value::Value,
 };
 
+mod binary_comparison;
 mod binary_math;
 mod field_reference;
 mod literal;
