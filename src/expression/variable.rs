@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use nom::{character::complete::alpha1, IResult};
+use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
@@ -52,7 +52,7 @@ pub(super) fn parse_assignable_variable(input: &str) -> IResult<&str, Box<dyn As
 }
 
 fn parse_variable_name(input: &str) -> IResult<&str, &str> {
-    alpha1(input)
+    re_find!(input, r"^[A-Za-z_][A-Za-z0-9_]*")
 }
 
 #[cfg(test)]
