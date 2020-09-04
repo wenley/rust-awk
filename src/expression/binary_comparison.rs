@@ -2,7 +2,8 @@ use regex::Regex;
 
 use nom::{
     branch::alt,
-    character::complete::{multispace0, one_of},
+    bytes::complete::tag,
+    character::complete::multispace0,
     combinator::map,
     sequence::{delimited, tuple},
 };
@@ -16,6 +17,11 @@ use crate::{
 #[derive(Debug)]
 enum Operator {
     Less,
+    LessEqual,
+    Equal,
+    NotEqual,
+    Greater,
+    GreaterEqual,
 }
 
 #[derive(Debug)]
@@ -45,6 +51,11 @@ impl Expression for BinaryComparison {
             };
             match self.operator {
                 Operator::Less => x < y,
+                Operator::LessEqual => x <= y,
+                Operator::Equal => x == y,
+                Operator::NotEqual => x != y,
+                Operator::Greater => x > y,
+                Operator::GreaterEqual => x >= y,
             }
         } else {
             let (s1, s2) = (
@@ -53,6 +64,11 @@ impl Expression for BinaryComparison {
             );
             match &self.operator {
                 Operator::Less => s1 < s2,
+                Operator::LessEqual => s1 <= s2,
+                Operator::Equal => s1 == s2,
+                Operator::NotEqual => s1 != s2,
+                Operator::Greater => s1 > s2,
+                Operator::GreaterEqual => s1 >= s2,
             }
         };
 
@@ -77,13 +93,28 @@ where
     F: Fn(&str) -> ExpressionParseResult,
 {
     move |input: &str| {
-        let parse_operator = map(
-            delimited(multispace0, one_of("<"), multispace0),
-            |operator| match operator {
-                '<' => Operator::Less,
-                _ => panic!("Unrecognized comparison character: {}", operator),
-            },
-        );
+        let operators = alt((
+            // Need to check longer tags before shorter tags due to prefix collision
+            tag("<="),
+            tag("=="),
+            tag("!="),
+            tag(">="),
+            tag(">"),
+            tag("<"),
+        ));
+        let parse_operator =
+            map(
+                delimited(multispace0, operators, multispace0),
+                |operator| match operator {
+                    "<" => Operator::Less,
+                    "<=" => Operator::LessEqual,
+                    "==" => Operator::Equal,
+                    "!=" => Operator::NotEqual,
+                    ">" => Operator::Greater,
+                    ">=" => Operator::GreaterEqual,
+                    _ => panic!("Unrecognized comparison character: {}", operator),
+                },
+            );
 
         let (i, (left, operator, right)) =
             tuple((|i| next_parser(i), parse_operator, |i| next_parser(i)))(input)?;
