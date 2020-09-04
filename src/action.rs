@@ -183,17 +183,19 @@ fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
-    let parse_while_condition_open = tuple((tag("while"), multispace0, one_of("("), multispace0));
-    let parse_while_condition_close = tuple((multispace0, one_of(")"), multispace0));
-    let parse_while_condition = delimited(
-        parse_while_condition_open,
-        parse_expression,
-        parse_while_condition_close,
-    );
-
     map(
-        tuple((parse_while_condition, parse_action)),
-        move |(condition, body)| Statement::While {
+        tuple((
+            tag("while"),
+            multispace0,
+            one_of("("),
+            multispace0,
+            parse_expression,
+            multispace0,
+            one_of(")"),
+            multispace0,
+            parse_action,
+        )),
+        move |(_, _, _, _, condition, _, _, _, body)| Statement::While {
             condition: condition,
             body: body,
         },
