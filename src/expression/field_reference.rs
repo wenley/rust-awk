@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::fmt::Debug;
 
-use nom::{character::complete::one_of, sequence::preceded};
+use nom::{character::complete::one_of, multi::many0, sequence::pair};
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
@@ -41,8 +41,11 @@ impl Expression for FieldReference {
 }
 
 pub(super) fn parse_field_reference(input: &str) -> ExpressionParseResult {
-    let (i, expr) = preceded(one_of("$"), super::parse_expression)(input)?;
-    Result::Ok((i, Box::new(FieldReference { expression: expr })))
+    let (i, (references, inner_expression)) = pair(many0(one_of("$")), super::parse_primary)(input)?;
+    let expression = references.iter().fold(inner_expression, |inner, _| {
+        Box::new(FieldReference { expression: inner })
+    });
+    Result::Ok((i, expression))
 }
 
 #[cfg(test)]

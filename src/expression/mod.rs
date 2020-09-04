@@ -38,7 +38,7 @@ pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
 
 pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
     // Descending order of precedence
-    let multiplication_parser = binary_math::multiplication_parser(parse_primary);
+    let multiplication_parser = binary_math::multiplication_parser(field_reference::parse_field_reference);
     let addition_parser = binary_math::addition_parser(|i| multiplication_parser(i));
     let regex_parser = regex_match::regex_parser(|i| addition_parser(i));
 
@@ -57,7 +57,6 @@ fn parse_primary(input: &str) -> ExpressionParseResult {
         literal::parse_literal,
         variable::parse_variable,
         parse_parens,
-        field_reference::parse_field_reference,
     ))(input)
 }
 
