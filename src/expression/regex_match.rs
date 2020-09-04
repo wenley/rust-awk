@@ -42,6 +42,33 @@ impl Expression for RegexMatch {
     }
 }
 
+pub(super) fn regex_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let (i, (left, operator, right)) = tuple((
+            |i| next_parser(i),
+            delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
+            |i| next_parser(i),
+        ))(input)?;
+
+        let negated = match operator {
+            "~" => false,
+            "!~" => true,
+            _ => panic!("Unexpected regex operator length: {}", operator),
+        };
+        Result::Ok((
+            i,
+            Box::new(RegexMatch {
+                left: left,
+                right: right,
+                negated,
+            }),
+        ))
+    }
+}
+
 // Regex matching does not associate
 pub(super) fn parse_regex_match(input: &str) -> ExpressionParseResult {
     let (i, (left, operator, right)) = tuple((
