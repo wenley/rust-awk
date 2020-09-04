@@ -71,7 +71,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::super::binary_math::parse_binary_math_expression;
+    use super::super::{binary_math::addition_parser, literal::parse_literal};
     use super::*;
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
@@ -87,8 +87,9 @@ mod tests {
     #[test]
     fn test_regex_match() {
         let (context, record) = empty_context_and_record();
+        let parser = regex_parser(addition_parser(parse_literal));
 
-        let result = regex_parser(parse_binary_math_expression)("1 ~ 2");
+        let result = parser("1 ~ 2");
         assert!(result.is_ok());
         let expression = result.unwrap().1;
         assert_eq!(
@@ -97,11 +98,11 @@ mod tests {
         );
 
         // Cannot consume the full expression
-        let result = regex_parser(parse_binary_math_expression)("1 ~ 2 ~ 3");
+        let result = parser("1 ~ 2 ~ 3");
         assert!(result.is_ok());
         assert_eq!(result.unwrap().0, " ~ 3");
 
-        let result = regex_parser(parse_binary_math_expression)("1 + 2 ~ 3");
+        let result = parser("1 + 2 ~ 3");
         assert!(result.is_ok());
         let (remainder, expression) = result.unwrap();
         assert_eq!(remainder, "");
@@ -110,7 +111,7 @@ mod tests {
             Value::Numeric(NumericValue::Integer(1)),
         );
 
-        let result = regex_parser(parse_binary_math_expression)("1 !~ 2");
+        let result = parser("1 !~ 2");
         assert!(result.is_ok());
         let expression = result.unwrap().1;
         assert_eq!(

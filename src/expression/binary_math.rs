@@ -109,10 +109,6 @@ impl Expression for BinaryMath {
     }
 }
 
-pub(super) fn parse_binary_math_expression(input: &str) -> ExpressionParseResult {
-    addition_parser(multiplication_parser(super::parse_primary))(input)
-}
-
 pub(super) fn addition_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
 where
     F: Fn(&str) -> ExpressionParseResult,
@@ -211,21 +207,23 @@ mod tests {
     #[test]
     fn binary_expressions_can_parse() {
         let (context, record) = empty_context_and_record();
-        let result = parse_binary_math_expression("1 + 2 - 3 + 4 - 5.5");
+        let parser = addition_parser(multiplication_parser(parse_literal));
+
+        let result = parser("1 + 2 - 3 + 4 - 5.5");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Float(-1.5)),
         );
 
-        let result = parse_binary_math_expression("1 * 2 + 3 * 4");
+        let result = parser("1 * 2 + 3 * 4");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(14)),
         );
 
-        let result = parse_binary_math_expression("6 / 5 * 4 / 3");
+        let result = parser("6 / 5 * 4 / 3");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
@@ -233,14 +231,14 @@ mod tests {
             Value::Numeric(NumericValue::Float(1.5999999999999999)),
         );
 
-        let result = parse_binary_math_expression("6 / 3");
+        let result = parser("6 / 3");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(2)),
         );
 
-        let result = parse_binary_math_expression("6 % 5 * 4 / 3 % 2");
+        let result = parser("6 % 5 * 4 / 3 % 2");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
