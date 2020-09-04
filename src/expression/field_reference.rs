@@ -40,12 +40,22 @@ impl Expression for FieldReference {
     }
 }
 
+pub(super) fn field_reference_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let (i, (references, inner_expression)) =
+            pair(many0(one_of("$")), |i| next_parser(i))(input)?;
+        let expression = references.iter().fold(inner_expression, |inner, _| {
+            Box::new(FieldReference { expression: inner })
+        });
+        Result::Ok((i, expression))
+    }
+}
+
 pub(super) fn parse_field_reference(input: &str) -> ExpressionParseResult {
-    let (i, (references, inner_expression)) = pair(many0(one_of("$")), super::parse_primary)(input)?;
-    let expression = references.iter().fold(inner_expression, |inner, _| {
-        Box::new(FieldReference { expression: inner })
-    });
-    Result::Ok((i, expression))
+    field_reference_parser(super::parse_primary)(input)
 }
 
 #[cfg(test)]
