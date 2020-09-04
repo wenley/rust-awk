@@ -100,7 +100,7 @@ mod tests {
         );
     }
 
-    #[test]
+    // #[test]
     // fn test_nested_field_references() {
     //     let (context, mut record) = empty_context_and_record();
     //     record.fields = vec!["2", "3", "hello"];
