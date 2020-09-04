@@ -99,10 +99,6 @@ where
     }
 }
 
-fn parse_binary_comparison(input: &str) -> ExpressionParseResult {
-    comparison_parser(super::literal::parse_literal)(input)
-}
-
 #[cfg(test)]
 mod tests {
     use super::super::literal::*;
@@ -121,15 +117,16 @@ mod tests {
     #[test]
     fn test_comparing_numbers() {
         let (context, record) = empty_context_and_record();
+        let parser = comparison_parser(parse_literal);
 
-        let result = parse_binary_comparison("1 < 2");
+        let result = parser("1 < 2");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
-        let result = parse_binary_comparison("2 < 1");
+        let result = parser("2 < 1");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
@@ -140,15 +137,16 @@ mod tests {
     #[test]
     fn test_comparing_strings() {
         let (context, record) = empty_context_and_record();
+        let parser = comparison_parser(parse_literal);
 
-        let result = parse_binary_comparison(r#""a" < "b""#);
+        let result = parser(r#""a" < "b""#);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
-        let result = parse_binary_comparison(r#""A" < "a""#);
+        let result = parser(r#""A" < "a""#);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
@@ -159,9 +157,10 @@ mod tests {
     #[test]
     fn test_comparing_numbers_and_strings() {
         let (context, record) = empty_context_and_record();
+        let parser = comparison_parser(parse_literal);
 
         // Numbers come before letters
-        let result = parse_binary_comparison(r#""a" < 1"#);
+        let result = parser(r#""a" < 1"#);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
