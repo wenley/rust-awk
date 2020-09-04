@@ -110,34 +110,39 @@ impl Expression for BinaryMath {
 }
 
 pub(super) fn parse_binary_math_expression(input: &str) -> ExpressionParseResult {
-    parse_addition(input)
+    addition_parser(parse_multiplication)(input)
 }
 
-fn parse_addition(input: &str) -> ExpressionParseResult {
-    let parse_added_expr = pair(
+pub(super) fn addition_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let parse_added_expr = pair(
+            map(
+                delimited(multispace0, one_of("+-"), multispace0),
+                |operator_char| match operator_char {
+                    '+' => Operator::Add,
+                    '-' => Operator::Subtract,
+                    _ => panic!("Unrecognized binary math operator {}", operator_char),
+                },
+            ),
+            |i| next_parser(i),
+        );
+        // Why does this `map` work??
         map(
-            delimited(multispace0, one_of("+-"), multispace0),
-            |operator_char| match operator_char {
-                '+' => Operator::Add,
-                '-' => Operator::Subtract,
-                _ => panic!("Unrecognized binary math operator {}", operator_char),
-            },
-        ),
-        parse_multiplication,
-    );
-    // Why does this `map` work??
-    map(
-        pair(parse_multiplication, many0(parse_added_expr)),
-        move |(first, mut rest)| {
-            rest.drain(0..).fold(first, |inner, (operator, next)| {
-                Box::new(BinaryMath {
-                    left: inner,
-                    operator: operator,
-                    right: next,
+            pair(|i| next_parser(i), many0(parse_added_expr)),
+            move |(first, mut rest)| {
+                rest.drain(0..).fold(first, |inner, (operator, next)| {
+                    Box::new(BinaryMath {
+                        left: inner,
+                        operator: operator,
+                        right: next,
+                    })
                 })
-            })
-        },
-    )(input)
+            },
+        )(input)
+    }
 }
 
 // Since multiplication is a higher precedence, it is lower level -> gets to consume characters
