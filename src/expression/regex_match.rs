@@ -42,31 +42,36 @@ impl Expression for RegexMatch {
     }
 }
 
-// Regex matching does not associate
-pub(super) fn parse_regex_match(input: &str) -> ExpressionParseResult {
-    let (i, (left, operator, right)) = tuple((
-        super::binary_math::parse_binary_math_expression,
-        delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
-        super::binary_math::parse_binary_math_expression,
-    ))(input)?;
+pub(super) fn regex_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let (i, (left, operator, right)) = tuple((
+            |i| next_parser(i),
+            delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
+            |i| next_parser(i),
+        ))(input)?;
 
-    let negated = match operator {
-        "~" => false,
-        "!~" => true,
-        _ => panic!("Unexpected regex operator length: {}", operator),
-    };
-    Result::Ok((
-        i,
-        Box::new(RegexMatch {
-            left: left,
-            right: right,
-            negated,
-        }),
-    ))
+        let negated = match operator {
+            "~" => false,
+            "!~" => true,
+            _ => panic!("Unexpected regex operator length: {}", operator),
+        };
+        Result::Ok((
+            i,
+            Box::new(RegexMatch {
+                left: left,
+                right: right,
+                negated,
+            }),
+        ))
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::{binary_math::addition_parser, literal::parse_literal};
     use super::*;
 
     fn empty_context_and_record() -> (Context, Record<'static>) {
@@ -82,8 +87,9 @@ mod tests {
     #[test]
     fn test_regex_match() {
         let (context, record) = empty_context_and_record();
+        let parser = regex_parser(addition_parser(parse_literal));
 
-        let result = parse_regex_match("1 ~ 2");
+        let result = parser("1 ~ 2");
         assert!(result.is_ok());
         let expression = result.unwrap().1;
         assert_eq!(
@@ -92,11 +98,11 @@ mod tests {
         );
 
         // Cannot consume the full expression
-        let result = parse_regex_match("1 ~ 2 ~ 3");
+        let result = parser("1 ~ 2 ~ 3");
         assert!(result.is_ok());
         assert_eq!(result.unwrap().0, " ~ 3");
 
-        let result = parse_regex_match("1 + 2 ~ 3");
+        let result = parser("1 + 2 ~ 3");
         assert!(result.is_ok());
         let (remainder, expression) = result.unwrap();
         assert_eq!(remainder, "");
@@ -105,7 +111,7 @@ mod tests {
             Value::Numeric(NumericValue::Integer(1)),
         );
 
-        let result = parse_regex_match("1 !~ 2");
+        let result = parser("1 !~ 2");
         assert!(result.is_ok());
         let expression = result.unwrap().1;
         assert_eq!(

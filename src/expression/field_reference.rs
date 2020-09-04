@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::fmt::Debug;
 
-use nom::{character::complete::one_of, sequence::preceded};
+use nom::{character::complete::one_of, multi::many0, sequence::pair};
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
@@ -40,9 +40,18 @@ impl Expression for FieldReference {
     }
 }
 
-pub(super) fn parse_field_reference(input: &str) -> ExpressionParseResult {
-    let (i, expr) = preceded(one_of("$"), super::parse_expression)(input)?;
-    Result::Ok((i, Box::new(FieldReference { expression: expr })))
+pub(super) fn field_reference_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let (i, (references, inner_expression)) =
+            pair(many0(one_of("$")), |i| next_parser(i))(input)?;
+        let expression = references.iter().fold(inner_expression, |inner, _| {
+            Box::new(FieldReference { expression: inner })
+        });
+        Result::Ok((i, expression))
+    }
 }
 
 #[cfg(test)]
@@ -77,7 +86,9 @@ mod tests {
     #[test]
     fn test_parse_field_reference() {
         let (context, mut record) = empty_context_and_record();
-        let result = parse_field_reference("$1");
+        let parser = field_reference_parser(parse_literal);
+
+        let result = parser("$1");
         assert_eq!(result.is_ok(), true);
         let expression = result.unwrap().1;
         assert_eq!(expression.evaluate(&context, &record), Value::Uninitialized,);
@@ -88,4 +99,19 @@ mod tests {
             Value::String("hello".to_string()),
         );
     }
+
+    #[test]
+    // fn test_nested_field_references() {
+    //     let (context, mut record) = empty_context_and_record();
+    //     record.fields = vec!["2", "3", "hello"];
+
+    //     let parser = field_reference_parser(parse_literal);
+    //     let result = parser("$$$1");
+    //     assert!(result.is_ok(), true);
+    //     let expression = result.unwrap().1;
+    //     assert_eq!(
+    //         expression.evaluate(&context, &record),
+    //         Value::String("hello".to_string()),
+    //     );
+    // }
 }

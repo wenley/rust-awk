@@ -109,64 +109,70 @@ impl Expression for BinaryMath {
     }
 }
 
-pub(super) fn parse_binary_math_expression(input: &str) -> ExpressionParseResult {
-    parse_addition(input)
-}
-
-fn parse_addition(input: &str) -> ExpressionParseResult {
-    let parse_added_expr = pair(
+pub(super) fn addition_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let parse_added_expr = pair(
+            map(
+                delimited(multispace0, one_of("+-"), multispace0),
+                |operator_char| match operator_char {
+                    '+' => Operator::Add,
+                    '-' => Operator::Subtract,
+                    _ => panic!("Unrecognized binary math operator {}", operator_char),
+                },
+            ),
+            |i| next_parser(i),
+        );
+        // Why does this `map` work??
         map(
-            delimited(multispace0, one_of("+-"), multispace0),
-            |operator_char| match operator_char {
-                '+' => Operator::Add,
-                '-' => Operator::Subtract,
-                _ => panic!("Unrecognized binary math operator {}", operator_char),
-            },
-        ),
-        parse_multiplication,
-    );
-    // Why does this `map` work??
-    map(
-        pair(parse_multiplication, many0(parse_added_expr)),
-        move |(first, mut rest)| {
-            rest.drain(0..).fold(first, |inner, (operator, next)| {
-                Box::new(BinaryMath {
-                    left: inner,
-                    operator: operator,
-                    right: next,
+            pair(|i| next_parser(i), many0(parse_added_expr)),
+            move |(first, mut rest)| {
+                rest.drain(0..).fold(first, |inner, (operator, next)| {
+                    Box::new(BinaryMath {
+                        left: inner,
+                        operator: operator,
+                        right: next,
+                    })
                 })
-            })
-        },
-    )(input)
+            },
+        )(input)
+    }
 }
 
 // Since multiplication is a higher precedence, it is lower level -> gets to consume characters
 // first
-fn parse_multiplication(input: &str) -> ExpressionParseResult {
-    let parse_added_expr = pair(
+pub(super) fn multiplication_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let parse_added_expr = pair(
+            map(
+                delimited(multispace0, one_of("*/%"), multispace0),
+                |operator_char| match operator_char {
+                    '*' => Operator::Multiply,
+                    '/' => Operator::Divide,
+                    '%' => Operator::Modulo,
+                    _ => panic!("Unrecognized binary math operator {}", operator_char),
+                },
+            ),
+            |i| next_parser(i),
+        );
         map(
-            delimited(multispace0, one_of("*/%"), multispace0),
-            |operator_char| match operator_char {
-                '*' => Operator::Multiply,
-                '/' => Operator::Divide,
-                '%' => Operator::Modulo,
-                _ => panic!("Unrecognized binary math operator {}", operator_char),
-            },
-        ),
-        super::parse_primary,
-    );
-    map(
-        pair(super::parse_primary, many0(parse_added_expr)),
-        move |(first, mut rest)| {
-            rest.drain(0..).fold(first, |inner, (operator, next)| {
-                Box::new(BinaryMath {
-                    left: inner,
-                    operator: operator,
-                    right: next,
+            pair(|i| next_parser(i), many0(parse_added_expr)),
+            move |(first, mut rest)| {
+                rest.drain(0..).fold(first, |inner, (operator, next)| {
+                    Box::new(BinaryMath {
+                        left: inner,
+                        operator: operator,
+                        right: next,
+                    })
                 })
-            })
-        },
-    )(input)
+            },
+        )(input)
+    }
 }
 
 #[cfg(test)]
@@ -201,21 +207,23 @@ mod tests {
     #[test]
     fn binary_expressions_can_parse() {
         let (context, record) = empty_context_and_record();
-        let result = parse_binary_math_expression("1 + 2 - 3 + 4 - 5.5");
+        let parser = addition_parser(multiplication_parser(parse_literal));
+
+        let result = parser("1 + 2 - 3 + 4 - 5.5");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Float(-1.5)),
         );
 
-        let result = parse_binary_math_expression("1 * 2 + 3 * 4");
+        let result = parser("1 * 2 + 3 * 4");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(14)),
         );
 
-        let result = parse_binary_math_expression("6 / 5 * 4 / 3");
+        let result = parser("6 / 5 * 4 / 3");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
@@ -223,14 +231,14 @@ mod tests {
             Value::Numeric(NumericValue::Float(1.5999999999999999)),
         );
 
-        let result = parse_binary_math_expression("6 / 3");
+        let result = parser("6 / 3");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(2)),
         );
 
-        let result = parse_binary_math_expression("6 % 5 * 4 / 3 % 2");
+        let result = parser("6 % 5 * 4 / 3 % 2");
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
