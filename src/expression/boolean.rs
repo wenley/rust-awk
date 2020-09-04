@@ -2,10 +2,10 @@ use regex::Regex;
 
 use nom::{
     bytes::complete::tag,
-    character::complete::multispace0,
+    character::complete::{multispace0, one_of},
     combinator::map,
-    multi::many0,
-    sequence::{delimited, pair, preceded},
+    multi::{many0, many0_count},
+    sequence::{delimited, pair, preceded, terminated},
 };
 
 use super::{Expression, ExpressionParseResult};
@@ -42,6 +42,48 @@ impl Expression for BinaryBoolean {
         };
         let int_value = if result { 1 } else { 0 };
         Value::Numeric(NumericValue::Integer(int_value))
+    }
+}
+
+#[derive(Debug)]
+struct NotBoolean {
+    expression: Box<dyn Expression>,
+}
+
+impl Expression for NotBoolean {
+    fn regex<'a>(&'a self) -> Option<&'a Regex> {
+        None
+    }
+
+    fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
+        let value = self
+            .expression
+            .evaluate(context, record)
+            .coercion_to_boolean();
+        let int_value = if value { 0 } else { 1 };
+        Value::Numeric(NumericValue::Integer(int_value))
+    }
+}
+
+pub(super) fn not_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let (i, (nestings, inner_expression)) =
+            pair(many0_count(terminated(one_of("!"), multispace0)), |i| {
+                next_parser(i)
+            })(input)?;
+
+        // Collapse nested negations for efficiency
+        let expression = if nestings % 2 == 0 {
+            inner_expression
+        } else {
+            Box::new(NotBoolean {
+                expression: inner_expression,
+            })
+        };
+        Result::Ok((i, expression))
     }
 }
 
@@ -164,6 +206,47 @@ mod tests {
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
             Value::Numeric(NumericValue::Integer(0)),
+        );
+    }
+
+    #[test]
+    fn test_not_parsing() {
+        let (context, record) = empty_context_and_record();
+        let parser = not_parser(parse_literal);
+
+        let result = parser(r#"!1"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(0)),
+        );
+
+        let result = parser(r#"!0"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
+        );
+
+        let result = parser(r#"!"a""#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(0)),
+        );
+
+        let result = parser(r#"!"""#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
+        );
+
+        let result = parser(r#"!!!!!0"#);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap().1.evaluate(&context, &record),
+            Value::Numeric(NumericValue::Integer(1)),
         );
     }
 }
