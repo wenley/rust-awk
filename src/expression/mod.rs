@@ -8,6 +8,7 @@ use crate::{
     value::Value,
 };
 
+mod binary_comparison;
 mod binary_math;
 mod field_reference;
 mod literal;
@@ -41,11 +42,13 @@ pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
     let field_reference_parser = field_reference::field_reference_parser(parse_primary);
     let multiplication_parser = binary_math::multiplication_parser(|i| field_reference_parser(i));
     let addition_parser = binary_math::addition_parser(|i| multiplication_parser(i));
-    let regex_parser = regex_match::regex_parser(|i| addition_parser(i));
+    let comparison_parser = binary_comparison::comparison_parser(|i| addition_parser(i));
+    let regex_parser = regex_match::regex_parser(|i| comparison_parser(i));
 
     // Ascending order of precedence
     let parser = alt((
         |i| regex_parser(i),
+        |i| comparison_parser(i),
         |i| addition_parser(i),
         |i| multiplication_parser(i),
         |i| field_reference_parser(i),
