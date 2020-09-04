@@ -47,6 +47,17 @@ where
     F: Fn(&str) -> ExpressionParseResult,
 {
     move |input: &str| {
+        alt((definite_regex_parser(|i| next_parser(i)), |i| {
+            next_parser(i)
+        }))(input)
+    }
+}
+
+fn definite_regex_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
         let (i, (left, operator, right)) = tuple((
             |i| next_parser(i),
             delimited(multispace0, alt((tag("~"), tag("!~"))), multispace0),
