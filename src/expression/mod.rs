@@ -1,7 +1,13 @@
 use regex::Regex;
 use std::fmt::Debug;
 
-use nom::{branch::alt, character::complete::one_of, sequence::delimited, IResult};
+use nom::{
+    branch::alt,
+    character::complete::{multispace0, one_of},
+    combinator::map,
+    sequence::tuple,
+    IResult,
+};
 
 use crate::{
     basic_types::{Context, Record},
@@ -61,7 +67,16 @@ fn parse_primary(input: &str) -> ExpressionParseResult {
 }
 
 fn parse_parens(input: &str) -> ExpressionParseResult {
-    delimited(one_of("("), parse_expression, one_of(")"))(input)
+    map(
+        tuple((
+            one_of("("),
+            multispace0,
+            parse_expression,
+            multispace0,
+            one_of(")"),
+        )),
+        |(_, _, expression, _, _)| expression,
+    )(input)
 }
 
 #[cfg(test)]
@@ -83,7 +98,7 @@ mod tests {
     fn test_parse_parens() {
         let (context, record) = empty_context_and_record();
 
-        let result = parse_expression("(1)");
+        let result = parse_expression("( 1 )");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
             result.unwrap().1.evaluate(&context, &record),
