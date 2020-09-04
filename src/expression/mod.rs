@@ -45,8 +45,9 @@ pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
     let addition_parser = binary_math::addition_parser(multiplication_parser);
     let comparison_parser = binary_comparison::comparison_parser(addition_parser);
     let regex_parser = regex_match::regex_parser(comparison_parser);
+    let and_parser = boolean::and_parser(regex_parser);
 
-    regex_parser(input)
+    and_parser(input)
 }
 
 fn parse_primary(input: &str) -> ExpressionParseResult {
