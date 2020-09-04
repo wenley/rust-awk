@@ -61,33 +61,39 @@ impl Expression for BinaryComparison {
     }
 }
 
+fn definite_comparison_parser<F>(next_parser: F) -> impl Fn(&str) -> ExpressionParseResult
+where
+    F: Fn(&str) -> ExpressionParseResult,
+{
+    move |input: &str| {
+        let parse_operator = map(
+            delimited(multispace0, one_of("<"), multispace0),
+            |operator| match operator {
+                '<' => Operator::Less,
+                _ => panic!("Unrecognized comparison character: {}", operator),
+            },
+        );
+
+        let (i, (left, operator, right)) =
+            tuple((|i| next_parser(i), parse_operator, |i| next_parser(i)))(input)?;
+
+        Result::Ok((
+            i,
+            Box::new(BinaryComparison {
+                left: left,
+                operator: operator,
+                right: right,
+            }),
+        ))
+    }
+}
+
 pub(super) fn parse_binary_comparison(input: &str) -> ExpressionParseResult {
     alt((parse_definite_comparison, super::literal::parse_literal))(input)
 }
 
 fn parse_definite_comparison(input: &str) -> ExpressionParseResult {
-    let parse_operator = map(
-        delimited(multispace0, one_of("<"), multispace0),
-        |operator| match operator {
-            '<' => Operator::Less,
-            _ => panic!("Unrecognized comparison character: {}", operator),
-        },
-    );
-
-    let (i, (left, operator, right)) = tuple((
-        super::literal::parse_literal,
-        parse_operator,
-        super::literal::parse_literal,
-    ))(input)?;
-
-    Result::Ok((
-        i,
-        Box::new(BinaryComparison {
-            left: left,
-            operator: operator,
-            right: right,
-        }),
-    ))
+    definite_comparison_parser(super::literal::parse_literal)(input)
 }
 
 #[cfg(test)]
