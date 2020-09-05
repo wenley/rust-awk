@@ -21,7 +21,9 @@ fn main() {
                 if n == 0 {
                     break;
                 }
-                buffer.truncate(n - 1);
+                if buffer.chars().last().unwrap() == '\n' {
+                    buffer.truncate(n - 1);
+                }
                 for line in run.output_for_line(&buffer) {
                     println!("{}", line);
                 }
