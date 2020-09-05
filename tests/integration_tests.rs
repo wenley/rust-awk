@@ -44,3 +44,9 @@ fn first_test() {
     baz"#;
     check_program_with_input(program_string, input);
 }
+
+#[test]
+fn accepts_dash_f_to_specify_file() {
+    let output = run_command_with_input(Command::new("cargo").args(&["run", "--bin", "rust-awk", "-f", "tests/test_cases/echo_program/program.awk"]), "hello");
+    assert_eq!(output, "hello\n");
+}
