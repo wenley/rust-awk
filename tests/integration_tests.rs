@@ -1,30 +1,39 @@
 extern crate rust_awk;
 
 // use std::fs::read_to_string;
-use std::process::{Command, Stdio};
 use std::io::Write;
+use std::process::{Command, Stdio};
 use std::str::from_utf8;
 
-fn check_program_with_input(program_string: &str, input: &str) {
-    let program = rust_awk::parse_program(program_string);
-    let mut run = rust_awk::start_run(&program);
-
-    let rust_output = input.lines().flat_map(|line| run.output_for_line(line)).map(|s| s + "\n").collect::<Vec<String>>().join("");
-    println!("{}", rust_output);
-
-    let mut reference_command = Command::new("awk")
-        .args(&[program_string])
+fn run_command_with_input(command: &mut Command, input: &str) -> String {
+    let mut piped = command
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to spawn");
     {
-        let stdin = reference_command.stdin.as_mut().expect("Failed to open StdIn for reference");
+        let stdin = piped.stdin.as_mut().expect("Failed to open StdIn");
         stdin.write(input.as_bytes()).expect("Failed to write");
     }
 
-    let reference_output = reference_command.wait_with_output().expect("Failed to read StdOut from reference").stdout;
-    assert_eq!(rust_output, from_utf8(&reference_output).expect("Failed to deserialize UTF-8 to String"));
+    let raw_output = piped
+        .wait_with_output()
+        .expect("Failed to read StdOut")
+        .stdout;
+    from_utf8(&raw_output)
+        .expect("Failed to deserialize")
+        .to_string()
+}
+
+fn check_program_with_input(program_string: &str, input: &str) {
+    let rust_output = run_command_with_input(
+        Command::new("cargo").args(&["run", "--bin", "rust-awk", program_string]),
+        input,
+    );
+    let reference_output =
+        run_command_with_input(Command::new("awk").args(&[program_string]), input);
+
+    assert_eq!(rust_output, reference_output);
 }
 
 #[test]
