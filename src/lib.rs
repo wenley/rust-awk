@@ -6,7 +6,6 @@ mod basic_types;
 mod expression;
 mod item;
 mod pattern;
-mod test;
 mod value;
 
 use crate::{
