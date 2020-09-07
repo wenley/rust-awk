@@ -10,7 +10,7 @@ fn main() {
     let parsed_args = rust_awk::parse_args::parse_args(args);
 
     let program = rust_awk::parse_program(&parsed_args.program_string.clone().unwrap());
-    let mut run = rust_awk::start_run(&program);
+    let mut run = rust_awk::start_run(program);
     run.apply_args(&parsed_args);
 
     run.output_for_begin_items()

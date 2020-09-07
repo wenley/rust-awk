@@ -25,37 +25,40 @@ pub fn parse_program(program_text: &str) -> Program {
     }
 }
 
-pub struct ProgramRun<'a> {
-    program: &'a Program,
+pub struct ProgramRun {
+    program: Program,
     context: Context,
 }
 
-pub fn start_run<'a>(program: &'a Program) -> ProgramRun<'a> {
+pub fn start_run(program: Program) -> ProgramRun {
     ProgramRun {
         program: program,
         context: Context::empty(),
     }
 }
 
-impl ProgramRun<'_> {
+impl ProgramRun {
     pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
         let record = Record {
             full_line: line,
             fields: self.split(line),
         };
+        // Need explicit borrow of the context to avoid borrowing `self` later
+        let context = &mut self.context;
 
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_line(&mut self.context, &record))
+            .flat_map(|item: &item::Item| item.output_for_line(context, &record))
             .collect()
     }
 
     pub fn output_for_begin_items(&mut self) -> Vec<String> {
+        let context = &mut self.context;
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_begin(&mut self.context))
+            .flat_map(|item| item.output_for_begin(context))
             .collect()
     }
 
