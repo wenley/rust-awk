@@ -6,12 +6,7 @@ extern crate rust_awk;
 fn main() {
     // Don't need the program name
     let args: Vec<String> = env::args().skip(1).collect();
-
-    let parsed_args = rust_awk::parse_args::parse_args(args);
-
-    let program = rust_awk::parse_program(&parsed_args.program_string.clone().unwrap());
-    let mut run = rust_awk::start_run(program);
-    run.apply_args(&parsed_args);
+    let mut run = rust_awk::start_run(args);
 
     run.output_for_begin_items()
         .iter()

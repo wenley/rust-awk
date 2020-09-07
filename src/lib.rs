@@ -5,7 +5,7 @@ mod action;
 mod basic_types;
 mod expression;
 mod item;
-pub mod parse_args;
+mod parse_args;
 mod pattern;
 mod value;
 
@@ -30,11 +30,18 @@ pub struct ProgramRun {
     context: Context,
 }
 
-pub fn start_run(program: Program) -> ProgramRun {
-    ProgramRun {
+pub fn start_run(args: Vec<String>) -> ProgramRun {
+    let parsed_args = parse_args::parse_args(args);
+    let program = parse_program(&parsed_args.program_string.clone().unwrap());
+
+    let mut run = ProgramRun {
         program: program,
         context: Context::empty(),
-    }
+    };
+
+    run.apply_args(&parsed_args);
+
+    run
 }
 
 impl ProgramRun {
