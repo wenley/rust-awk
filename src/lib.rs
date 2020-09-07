@@ -31,8 +31,8 @@ pub struct ProgramRun {
 }
 
 pub fn start_run(args: Vec<String>) -> ProgramRun {
-    let parsed_args = parse_args::parse_args(args);
-    let program = parse_program(&parsed_args.program_string.clone().unwrap());
+    let (program_string, parsed_args) = parse_args::parse_args(args);
+    let program = parse_program(&program_string);
 
     let mut run = ProgramRun {
         program: program,

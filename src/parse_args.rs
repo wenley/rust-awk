@@ -3,7 +3,6 @@ use std::collections::HashMap;
 pub struct Args {
     pub(crate) field_separator: String,
     pub(crate) variables: HashMap<String, String>,
-    pub program_string: Option<String>,
     pub(crate) filepaths_to_parse: Vec<String>,
 }
 
@@ -15,13 +14,13 @@ enum ParsingState {
     ExpectProgramFileName,
 }
 
-pub fn parse_args(args: Vec<String>) -> Args {
+pub fn parse_args(args: Vec<String>) -> (String, Args) {
     let mut parsed_args = Args {
         field_separator: " ".to_string(),
         variables: HashMap::new(),
-        program_string: None,
         filepaths_to_parse: vec![],
     };
+    let mut program_string = None;
     let mut state = ParsingState::Neutral;
     for arg in args {
         match state {
@@ -30,8 +29,8 @@ pub fn parse_args(args: Vec<String>) -> Args {
                 "-f" => state = ParsingState::ExpectProgramFileName,
                 "-v" => state = ParsingState::ExpectVariable,
                 _ => {
-                    if parsed_args.program_string.is_none() {
-                        parsed_args.program_string = Some(arg);
+                    if program_string.is_none() {
+                        program_string = Some(arg);
                     } else {
                         parsed_args.filepaths_to_parse.push(arg);
                     }
@@ -51,8 +50,7 @@ pub fn parse_args(args: Vec<String>) -> Args {
             }
             ParsingState::ExpectProgramFileName => {
                 // TODO: Parse from filepath
-                let program_string = "aoeu".to_string();
-                parsed_args.program_string = Some(program_string);
+                program_string = Some("aoeu".to_string());
                 state = ParsingState::Neutral;
             }
         }
@@ -61,11 +59,11 @@ pub fn parse_args(args: Vec<String>) -> Args {
     if state != ParsingState::Neutral {
         panic!("Did not finish parsing! Still in {:?}", state);
     }
-    if parsed_args.program_string.is_none() {
+    if program_string.is_none() {
         panic!("No program provided!");
     }
 
-    parsed_args
+    (program_string.unwrap(), parsed_args)
 }
 
 #[cfg(test)]
@@ -89,26 +87,26 @@ mod tests {
     #[test]
     fn with_just_a_string() {
         let program = basic_program_string();
-        let args = parse_args(stringify(vec![program]));
-        assert_eq!(args.program_string.unwrap(), program);
+        let (program_string, _) = parse_args(stringify(vec![program]));
+        assert_eq!(program_string, program);
     }
 
     #[test]
     fn with_multiple_variables() {
-        let args = parse_args(stringify(vec!["-v", "a=b=c", basic_program_string()]));
+        let (_, args) = parse_args(stringify(vec!["-v", "a=b=c", basic_program_string()]));
         assert_eq!(args.variables.len(), 1);
         assert_eq!(args.variables.get("a").unwrap(), "b=c");
     }
 
     #[test]
     fn with_field_separator() {
-        let args = parse_args(stringify(vec!["-F", "abc", basic_program_string()]));
+        let (_, args) = parse_args(stringify(vec!["-F", "abc", basic_program_string()]));
         assert_eq!(args.field_separator, "abc");
     }
 
     #[test]
     fn with_separator_between_variables() {
-        let args = parse_args(stringify(vec![
+        let (_, args) = parse_args(stringify(vec![
             "-v",
             "foo=123",
             "-F",
@@ -128,7 +126,7 @@ mod tests {
 
     #[test]
     fn with_files_to_process() {
-        let args = parse_args(stringify(vec![
+        let (_, args) = parse_args(stringify(vec![
             basic_program_string(),
             "data1.txt",
             "data2.txt",
