@@ -25,20 +25,18 @@ pub(crate) fn parse_args(args: Vec<String>) -> Args {
     let mut state = ParsingState::Neutral;
     for arg in args {
         match state {
-            ParsingState::Neutral => {
-                match &arg[..] {
-                    "-F" => state = ParsingState::ExpectFieldSeparator,
-                    "-f" => state = ParsingState::ExpectProgramFileName,
-                    "-v" => state = ParsingState::ExpectVariable,
-                    _ => {
-                        if parsed_args.program_string.is_none() {
-                            parsed_args.program_string = Some(arg);
-                        } else {
-                            parsed_args.filepaths_to_parse.push(arg);
-                        }
+            ParsingState::Neutral => match &arg[..] {
+                "-F" => state = ParsingState::ExpectFieldSeparator,
+                "-f" => state = ParsingState::ExpectProgramFileName,
+                "-v" => state = ParsingState::ExpectVariable,
+                _ => {
+                    if parsed_args.program_string.is_none() {
+                        parsed_args.program_string = Some(arg);
+                    } else {
+                        parsed_args.filepaths_to_parse.push(arg);
                     }
                 }
-            }
+            },
             ParsingState::ExpectFieldSeparator => {
                 parsed_args.field_separator = arg;
                 state = ParsingState::Neutral;
@@ -68,4 +66,78 @@ pub(crate) fn parse_args(args: Vec<String>) -> Args {
     }
 
     parsed_args
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn basic_program_string() -> &'static str {
+        "{ print($0); }"
+    }
+
+    fn stringify<'a>(args: Vec<&'a str>) -> Vec<String> {
+        args.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    #[should_panic]
+    fn without_any_args() {
+        parse_args(vec![]);
+    }
+
+    #[test]
+    fn with_just_a_string() {
+        let program = basic_program_string();
+        let args = parse_args(stringify(vec![program]));
+        assert_eq!(args.program_string.unwrap(), program);
+    }
+
+    #[test]
+    fn with_multiple_variables() {
+        let args = parse_args(stringify(vec!["-v", "a=b=c", basic_program_string()]));
+        assert_eq!(args.variables.len(), 1);
+        assert_eq!(args.variables.get("a").unwrap(), "b=c");
+    }
+
+    #[test]
+    fn with_field_separator() {
+        let args = parse_args(stringify(vec!["-F", "abc", basic_program_string()]));
+        assert_eq!(args.field_separator, "abc");
+    }
+
+    #[test]
+    fn with_separator_between_variables() {
+        let args = parse_args(stringify(vec![
+            "-v",
+            "foo=123",
+            "-F",
+            "abc",
+            "-v",
+            "bar=456",
+            basic_program_string(),
+        ]));
+        assert_eq!(args.field_separator, "abc");
+        assert_eq!(args.variables.len(), 2);
+        assert_eq!(args.variables.get("foo").unwrap(), "123");
+        assert_eq!(args.variables.get("bar").unwrap(), "456");
+    }
+
+    #[test]
+    fn with_specified_program_file() {}
+
+    #[test]
+    fn with_files_to_process() {
+        let args = parse_args(stringify(vec![
+            basic_program_string(),
+            "data1.txt",
+            "data2.txt",
+            "data3.txt",
+        ]));
+        assert_eq!(args.filepaths_to_parse.len(), 3);
+        assert_eq!(
+            args.filepaths_to_parse,
+            stringify(vec!["data1.txt", "data2.txt", "data3.txt",])
+        );
+    }
 }
