@@ -5,7 +5,7 @@ mod action;
 mod basic_types;
 mod expression;
 mod item;
-mod parse_args;
+pub mod parse_args;
 mod pattern;
 mod value;
 
@@ -57,6 +57,14 @@ impl ProgramRun<'_> {
             .iter()
             .flat_map(|item| item.output_for_begin(&mut self.context))
             .collect()
+    }
+
+    pub fn apply_args(&mut self, args: &parse_args::Args) {
+        self.context.set_field_separator(&args.field_separator);
+        for (name, value) in args.variables.iter() {
+            self.context
+                .assign_variable(name, value::Value::String(value.to_string()));
+        }
     }
 
     fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {

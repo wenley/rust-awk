@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-pub(crate) struct Args {
-    field_separator: String,
-    variables: HashMap<String, String>,
-    program_string: Option<String>,
-    filepaths_to_parse: Vec<String>,
+pub struct Args {
+    pub(crate) field_separator: String,
+    pub(crate) variables: HashMap<String, String>,
+    pub program_string: Option<String>,
+    pub(crate) filepaths_to_parse: Vec<String>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -15,7 +15,7 @@ enum ParsingState {
     ExpectProgramFileName,
 }
 
-pub(crate) fn parse_args(args: Vec<String>) -> Args {
+pub fn parse_args(args: Vec<String>) -> Args {
     let mut parsed_args = Args {
         field_separator: " ".to_string(),
         variables: HashMap::new(),
