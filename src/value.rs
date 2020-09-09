@@ -56,4 +56,12 @@ impl Clone for Value {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    #[test]
+    fn test_string_to_numeric() {
+        assert_eq!(
+            Value::String("123".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(123),
+        );
+    }
+}
