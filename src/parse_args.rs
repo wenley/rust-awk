@@ -49,8 +49,8 @@ pub fn parse_args(args: Vec<String>) -> (String, Args) {
                 state = ParsingState::Neutral;
             }
             ParsingState::ExpectProgramFileName => {
-                // TODO: Parse from filepath
-                program_string = Some("aoeu".to_string());
+                let string = std::fs::read_to_string(arg).unwrap();
+                program_string = Some(string);
                 state = ParsingState::Neutral;
             }
         }
