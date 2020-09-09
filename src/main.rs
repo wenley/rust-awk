@@ -1,5 +1,5 @@
 use std::env;
-use std::io;
+use std::io::{stdin};
 
 extern crate rust_awk;
 
@@ -12,8 +12,13 @@ fn main() {
         .iter()
         .for_each(|line| println!("{}", line));
 
-    let stdin = io::stdin();
+    if input_file_paths.len() == 0 {
+        process_stdin(run);
+    }
+}
 
+fn process_stdin(mut run: rust_awk::ProgramRun) {
+    let stdin = stdin();
     let mut buffer = String::new();
     loop {
         match stdin.read_line(&mut buffer) {
@@ -31,6 +36,7 @@ fn main() {
             }
             Err(error) => {
                 eprintln!("Error encountered: {}", error);
+                break;
             }
         }
     }
