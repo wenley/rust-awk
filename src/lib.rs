@@ -30,7 +30,7 @@ pub struct ProgramRun {
     context: Context,
 }
 
-pub fn start_run(args: Vec<String>) -> ProgramRun {
+pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
     let (program_string, parsed_args) = parse_args::parse_args(args);
     let program = parse_program(&program_string);
 
@@ -41,7 +41,7 @@ pub fn start_run(args: Vec<String>) -> ProgramRun {
 
     run.apply_args(&parsed_args);
 
-    run
+    (run, parsed_args.filepaths_to_parse)
 }
 
 impl ProgramRun {
