@@ -89,6 +89,27 @@ mod tests {
             Value::String("123".to_string()).coerce_to_numeric(),
             NumericValue::Integer(123),
         );
+        assert_eq!(
+            Value::String("1.23".to_string()).coerce_to_numeric(),
+            NumericValue::Float(1.23),
+        );
+        // TODO: Make these tests work
+        // assert_eq!(
+        //     Value::String("-12e3".to_string()).coerce_to_numeric(),
+        //     NumericValue::Integer(-12000),
+        // );
+        // assert_eq!(
+        //     Value::String("-12e-3".to_string()).coerce_to_numeric(),
+        //     NumericValue::Float(-12e-3),
+        // );
+        assert_eq!(
+            Value::String("       123".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(123),
+        );
+        assert_eq!(
+            Value::String("123abc".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(123),
+        );
     }
 
     #[test]
