@@ -1,4 +1,4 @@
-use nom::{re_find, IResult};
+use nom::{branch::alt, character::complete::multispace0, re_find, sequence::preceded, IResult};
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub(crate) enum NumericValue {
@@ -26,7 +26,14 @@ impl Value {
     pub(crate) fn coerce_to_numeric(&self) -> NumericValue {
         match self {
             Value::Numeric(n) => *n,
-            Value::String(_) => panic!("Haven't implemented string to integer coercion"),
+            Value::String(s) => match preceded(
+                multispace0,
+                alt((parse_float_literal, parse_integer_literal)),
+            )(s)
+            {
+                Ok((_, n)) => n,
+                Err(_) => NumericValue::Float(0.0),
+            },
             Value::Uninitialized => NumericValue::Integer(0),
         }
     }
