@@ -22,6 +22,8 @@ mod literal;
 mod regex_match;
 mod variable;
 
+pub use variable::parse_variable_name;
+
 pub(crate) trait Expression: Debug {
     fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value;
 

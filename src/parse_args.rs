@@ -1,4 +1,7 @@
+use nom::{character::complete::one_of, sequence::terminated};
 use std::collections::HashMap;
+
+use crate::expression::parse_variable_name;
 
 pub struct Args {
     pub(crate) field_separator: String,
@@ -41,11 +44,12 @@ pub fn parse_args(args: Vec<String>) -> (String, Args) {
                 state = ParsingState::Neutral;
             }
             ParsingState::ExpectVariable => {
-                let mut var_pair: Vec<&str> = arg.splitn(2, "=").collect();
-                let value = var_pair.pop().unwrap().to_string();
-                let var_name = var_pair.pop().unwrap().to_string();
-
-                parsed_args.variables.insert(var_name, value);
+                // Raises exception if parsing fails
+                let (value, var_name) =
+                    terminated(parse_variable_name, one_of("="))(arg.as_str()).unwrap();
+                parsed_args
+                    .variables
+                    .insert(var_name.to_string(), value.to_string());
                 state = ParsingState::Neutral;
             }
             ParsingState::ExpectProgramFileName => {
@@ -89,6 +93,19 @@ mod tests {
         let program = basic_program_string();
         let (program_string, _) = parse_args(stringify(vec![program]));
         assert_eq!(program_string, program);
+    }
+
+    #[test]
+    fn with_weird_variables() {
+        let (_, args) = parse_args(stringify(vec!["-v", r#"a=b=c""#, basic_program_string()]));
+        assert_eq!(args.variables.len(), 1);
+        assert_eq!(args.variables.get("a").unwrap(), r#"b=c""#);
+    }
+
+    #[test]
+    #[should_panic]
+    fn with_invalid_quote_variable() {
+        parse_args(stringify(vec!["-v", r#"a"b=c"#, basic_program_string()]));
     }
 
     #[test]
