@@ -64,7 +64,11 @@ impl Clone for Value {
     }
 }
 
-pub(crate) fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
+pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
+    alt((parse_float_literal, parse_integer_literal))(input)
+}
+
+fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
     // Omit ? on the . to intentionally _not_ match on integers
     let (input, matched) = re_find!(input, r"^[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?")?;
     let number = matched.parse::<f64>().unwrap();
@@ -72,7 +76,7 @@ pub(crate) fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
     IResult::Ok((input, NumericValue::Float(number)))
 }
 
-pub(crate) fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
+fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
     let (input, matched) = re_find!(input, r"^[-+]?[0-9]+")?;
     let number = matched.parse::<i64>().unwrap();
 
