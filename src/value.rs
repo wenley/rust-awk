@@ -97,6 +97,23 @@ pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
                 IResult::Ok((input, parse_as_float(matched)))
             }
         }
+        (_, Some(_), Some(decimal_string), Some(exponent_string)) => {
+            let exponent = exponent_string.as_str().parse::<i64>().unwrap();
+            let num_decimals = decimal_string
+                .as_str()
+                .trim_end_matches("0")
+                .chars()
+                .count() as i64;
+
+            if exponent >= num_decimals {
+                IResult::Ok((
+                    input,
+                    NumericValue::Integer(matched.parse::<f64>().unwrap() as i64),
+                ))
+            } else {
+                IResult::Ok((input, parse_as_float(matched)))
+            }
+        }
         (_, _, _, _) => IResult::Ok((input, parse_as_float(matched))),
     }
 }
@@ -130,6 +147,14 @@ mod tests {
         assert_eq!(
             Value::String("-12e-3".to_string()).coerce_to_numeric(),
             NumericValue::Float(-12e-3),
+        );
+        assert_eq!(
+            Value::String("-.12e2".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(-12),
+        );
+        assert_eq!(
+            Value::String("-.12e1".to_string()).coerce_to_numeric(),
+            NumericValue::Float(-1.2),
         );
         assert_eq!(
             Value::String("       123".to_string()).coerce_to_numeric(),
@@ -170,7 +195,7 @@ mod tests {
         );
         assert_eq!(
             parse_numeric("123.45E5"),
-            IResult::Ok(("", NumericValue::Float(123.45e5)))
+            IResult::Ok(("", NumericValue::Integer(12345000)))
         );
         assert_eq!(
             parse_numeric(".45"),
