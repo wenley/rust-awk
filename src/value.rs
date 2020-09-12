@@ -75,7 +75,9 @@ pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
         captures.name("decimals"),
         captures.name("exponent"),
     ) {
-        (Some(_), _, None, None) => IResult::Ok((input, parse_as_int(matched))),
+        (Some(_), _, None, None) | (_, None, Some(_), None) => {
+            IResult::Ok((input, parse_as_int(matched)))
+        }
         (Some(digits_string), _, None, Some(exponent_string)) => {
             let mut exponent = exponent_string.as_str().parse::<i64>().unwrap();
             let mut digits = digits_string.as_str().parse::<i64>().unwrap();
