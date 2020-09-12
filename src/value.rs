@@ -75,12 +75,17 @@ pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
         captures.name("decimals"),
         captures.name("exponent"),
     ) {
+        (Some(_), _, None, None) => IResult::Ok((input, parse_as_int(matched))),
         (_, _, _, _) => IResult::Ok((input, parse_as_float(matched))),
     }
 }
 
 fn parse_as_float(s: &str) -> NumericValue {
     NumericValue::Float(s.parse::<f64>().unwrap())
+}
+
+fn parse_as_int(s: &str) -> NumericValue {
+    NumericValue::Integer(s.parse::<f64>().unwrap() as i64)
 }
 
 #[cfg(test)]
