@@ -51,7 +51,8 @@ pub(super) fn parse_assignable_variable(input: &str) -> IResult<&str, Box<dyn As
     ))
 }
 
-fn parse_variable_name(input: &str) -> IResult<&str, &str> {
+// Public for use in parse_args
+pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
     re_find!(input, r"^[A-Za-z_][A-Za-z0-9_]*")
 }
 
