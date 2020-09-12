@@ -1,4 +1,5 @@
-use nom::{branch::alt, character::complete::multispace0, re_find, sequence::preceded, IResult};
+use nom::{character::complete::multispace0, re_find, sequence::preceded, IResult};
+use regex::Regex;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub(crate) enum NumericValue {
@@ -26,11 +27,7 @@ impl Value {
     pub(crate) fn coerce_to_numeric(&self) -> NumericValue {
         match self {
             Value::Numeric(n) => *n,
-            Value::String(s) => match preceded(
-                multispace0,
-                alt((parse_float_literal, parse_integer_literal)),
-            )(s)
-            {
+            Value::String(s) => match preceded(multispace0, parse_numeric)(s) {
                 Ok((_, n)) => n,
                 Err(_) => NumericValue::Float(0.0),
             },
@@ -64,19 +61,73 @@ impl Clone for Value {
     }
 }
 
-pub(crate) fn parse_float_literal(input: &str) -> IResult<&str, NumericValue> {
-    // Omit ? on the . to intentionally _not_ match on integers
-    let (input, matched) = re_find!(input, r"^[-+]?[0-9]*\.[0-9]+([eE][-+]?[0-9]+)?")?;
-    let number = matched.parse::<f64>().unwrap();
+pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
+    let (input, matched) = re_find!(input, r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?")?;
 
-    IResult::Ok((input, NumericValue::Float(number)))
+    // Once we know we have a good decimal, look for the different parts
+    // Use `+?` to ensure blanks are captured as None for easier matching
+    let parts: Regex = Regex::new(r"^[-+]?(?P<digits>[0-9]+)?(?P<dot>\.)?(?P<decimals>[0-9]+)?([eE](?P<exponent>[-+]?[0-9]+))?").unwrap();
+    let captures = parts.captures(matched).unwrap();
+
+    match (
+        captures.name("digits"),
+        captures.name("dot"),
+        captures.name("decimals"),
+        captures.name("exponent"),
+    ) {
+        (Some(_), _, None, None) | (_, None, Some(_), None) => {
+            IResult::Ok((input, parse_as_int(matched)))
+        }
+        (Some(digits_string), _, None, Some(exponent_string)) => {
+            let mut exponent = exponent_string.as_str().parse::<i64>().unwrap();
+            let mut digits = digits_string.as_str().parse::<i64>().unwrap();
+
+            // Simplification by converting trailing zeroes into the exponent
+            while digits % 10 == 0 {
+                digits = digits / 10;
+                exponent = exponent + 1;
+            }
+
+            // If after simplification, the number has no decimal digits, then it is considered an
+            // integer
+            if exponent >= 0 {
+                IResult::Ok((
+                    input,
+                    NumericValue::Integer(matched.parse::<f64>().unwrap() as i64),
+                ))
+            } else {
+                IResult::Ok((input, parse_as_float(matched)))
+            }
+        }
+        (_, Some(_), Some(decimal_string), Some(exponent_string)) => {
+            let exponent = exponent_string.as_str().parse::<i64>().unwrap();
+            let num_decimals = decimal_string
+                .as_str()
+                .trim_end_matches("0")
+                .chars()
+                .count() as i64;
+
+            // If after simplification, the number has no decimal digits, then it is considered an
+            // integer
+            if exponent >= num_decimals {
+                IResult::Ok((
+                    input,
+                    NumericValue::Integer(matched.parse::<f64>().unwrap() as i64),
+                ))
+            } else {
+                IResult::Ok((input, parse_as_float(matched)))
+            }
+        }
+        (_, _, _, _) => IResult::Ok((input, parse_as_float(matched))),
+    }
 }
 
-pub(crate) fn parse_integer_literal(input: &str) -> IResult<&str, NumericValue> {
-    let (input, matched) = re_find!(input, r"^[-+]?[0-9]+")?;
-    let number = matched.parse::<i64>().unwrap();
+fn parse_as_float(s: &str) -> NumericValue {
+    NumericValue::Float(s.parse::<f64>().unwrap())
+}
 
-    IResult::Ok((input, NumericValue::Integer(number)))
+fn parse_as_int(s: &str) -> NumericValue {
+    NumericValue::Integer(s.parse::<f64>().unwrap() as i64)
 }
 
 #[cfg(test)]
@@ -93,15 +144,22 @@ mod tests {
             Value::String("1.23".to_string()).coerce_to_numeric(),
             NumericValue::Float(1.23),
         );
-        // TODO: Make these tests work
-        // assert_eq!(
-        //     Value::String("-12e3".to_string()).coerce_to_numeric(),
-        //     NumericValue::Integer(-12000),
-        // );
-        // assert_eq!(
-        //     Value::String("-12e-3".to_string()).coerce_to_numeric(),
-        //     NumericValue::Float(-12e-3),
-        // );
+        assert_eq!(
+            Value::String("-12e3".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(-12000),
+        );
+        assert_eq!(
+            Value::String("-12e-3".to_string()).coerce_to_numeric(),
+            NumericValue::Float(-12e-3),
+        );
+        assert_eq!(
+            Value::String("-.12e2".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(-12),
+        );
+        assert_eq!(
+            Value::String("-.12e1".to_string()).coerce_to_numeric(),
+            NumericValue::Float(-1.2),
+        );
         assert_eq!(
             Value::String("       123".to_string()).coerce_to_numeric(),
             NumericValue::Integer(123),
@@ -115,47 +173,44 @@ mod tests {
     #[test]
     fn parse_number_literals() {
         // Integers
+        assert_eq!(parse_numeric("123").unwrap().1, NumericValue::Integer(123));
         assert_eq!(
-            parse_integer_literal("123").unwrap().1,
-            NumericValue::Integer(123)
-        );
-        assert_eq!(
-            parse_integer_literal("123000").unwrap().1,
+            parse_numeric("123000").unwrap().1,
             NumericValue::Integer(123000)
         );
         assert_eq!(
-            parse_integer_literal("-123").unwrap().1,
+            parse_numeric("-123").unwrap().1,
             NumericValue::Integer(-123)
         );
-        assert_eq!(parse_integer_literal("(123").is_err(), true);
+        assert_eq!(parse_numeric("(123").is_err(), true);
         // Would like this test to pass, but the distinction is implemented
         // by the sequencing of the parsers of parse_number_literal
-        // assert_eq!(parse_integer_literal("123.45").is_err(), true);
-        assert_eq!(parse_integer_literal(".").is_err(), true);
+        // assert_eq!(parse_numeric("123.45").is_err(), true);
+        assert_eq!(parse_numeric(".").is_err(), true);
 
         // Floats
         assert_eq!(
-            parse_float_literal("123.45"),
+            parse_numeric("123.45"),
             IResult::Ok(("", NumericValue::Float(123.45)))
         );
         assert_eq!(
-            parse_float_literal("123.45e-5"),
+            parse_numeric("123.45e-5"),
             IResult::Ok(("", NumericValue::Float(123.45e-5)))
         );
         assert_eq!(
-            parse_float_literal("123.45E5"),
-            IResult::Ok(("", NumericValue::Float(123.45e5)))
+            parse_numeric("123.45E5"),
+            IResult::Ok(("", NumericValue::Integer(12345000)))
         );
         assert_eq!(
-            parse_float_literal(".45"),
+            parse_numeric(".45"),
             IResult::Ok(("", NumericValue::Float(0.45)))
         );
         assert_eq!(
-            parse_float_literal("-123.45"),
+            parse_numeric("-123.45"),
             IResult::Ok(("", NumericValue::Float(-123.45)))
         );
-        assert_eq!(parse_float_literal("a").is_err(), true);
-        assert_eq!(parse_float_literal(".").is_err(), true);
-        assert_eq!(parse_float_literal("+e").is_err(), true);
+        assert_eq!(parse_numeric("a").is_err(), true);
+        assert_eq!(parse_numeric(".").is_err(), true);
+        assert_eq!(parse_numeric("+e").is_err(), true);
     }
 }

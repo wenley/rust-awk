@@ -9,7 +9,7 @@ use nom::{
 
 use crate::{
     basic_types::{Context, Record},
-    value::{parse_float_literal, parse_integer_literal, NumericValue, Value},
+    value::{parse_numeric, NumericValue, Value},
 };
 
 use super::{Expression, ExpressionParseResult};
@@ -56,7 +56,7 @@ pub(super) fn parse_literal(input: &str) -> ExpressionParseResult {
 }
 
 fn parse_number_literal(input: &str) -> ExpressionParseResult {
-    let (i, number) = alt((parse_float_literal, parse_integer_literal))(input)?;
+    let (i, number) = parse_numeric(input)?;
 
     Result::Ok((i, Box::new(Literal::Numeric(number))))
 }
