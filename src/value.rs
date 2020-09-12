@@ -1,4 +1,5 @@
 use nom::{character::complete::multispace0, re_find, sequence::preceded, IResult};
+use regex::Regex;
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub(crate) enum NumericValue {
@@ -62,9 +63,24 @@ impl Clone for Value {
 
 pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
     let (input, matched) = re_find!(input, r"^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?")?;
-    let number = matched.parse::<f64>().unwrap();
 
-    IResult::Ok((input, NumericValue::Float(number)))
+    // Once we know we have a good decimal, look for the different parts
+    // Use `+?` to ensure blanks are captured as None for easier matching
+    let parts: Regex = Regex::new(r"^[-+]?(?P<digits>[0-9]+)?(?P<dot>\.)?(?P<decimals>[0-9]+)?([eE](?P<exponent>[-+]?[0-9]+))?").unwrap();
+    let captures = parts.captures(matched).unwrap();
+
+    match (
+        captures.name("digits"),
+        captures.name("dot"),
+        captures.name("decimals"),
+        captures.name("exponent"),
+    ) {
+        (_, _, _, _) => IResult::Ok((input, parse_as_float(matched))),
+    }
+}
+
+fn parse_as_float(s: &str) -> NumericValue {
+    NumericValue::Float(s.parse::<f64>().unwrap())
 }
 
 #[cfg(test)]
