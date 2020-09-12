@@ -81,13 +81,15 @@ pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
         (Some(digits_string), _, None, Some(exponent_string)) => {
             let mut exponent = exponent_string.as_str().parse::<i64>().unwrap();
             let mut digits = digits_string.as_str().parse::<i64>().unwrap();
-            // If after simplification, the number has no decimal digits, then it is considered an
-            // integer
+
+            // Simplification by converting trailing zeroes into the exponent
             while digits % 10 == 0 {
                 digits = digits / 10;
                 exponent = exponent + 1;
             }
 
+            // If after simplification, the number has no decimal digits, then it is considered an
+            // integer
             if exponent >= 0 {
                 IResult::Ok((
                     input,
@@ -105,6 +107,8 @@ pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
                 .chars()
                 .count() as i64;
 
+            // If after simplification, the number has no decimal digits, then it is considered an
+            // integer
             if exponent >= num_decimals {
                 IResult::Ok((
                     input,
