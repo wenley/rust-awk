@@ -76,6 +76,25 @@ pub(crate) fn parse_numeric(input: &str) -> IResult<&str, NumericValue> {
         captures.name("exponent"),
     ) {
         (Some(_), _, None, None) => IResult::Ok((input, parse_as_int(matched))),
+        (Some(digits_string), _, None, Some(exponent_string)) => {
+            let mut exponent = exponent_string.as_str().parse::<i64>().unwrap();
+            let mut digits = digits_string.as_str().parse::<i64>().unwrap();
+            // If after simplification, the number has no decimal digits, then it is considered an
+            // integer
+            while digits % 10 == 0 {
+                digits = digits / 10;
+                exponent = exponent + 1;
+            }
+
+            if exponent >= 0 {
+                IResult::Ok((
+                    input,
+                    NumericValue::Integer(matched.parse::<f64>().unwrap() as i64),
+                ))
+            } else {
+                IResult::Ok((input, parse_as_float(matched)))
+            }
+        }
         (_, _, _, _) => IResult::Ok((input, parse_as_float(matched))),
     }
 }
@@ -102,15 +121,14 @@ mod tests {
             Value::String("1.23".to_string()).coerce_to_numeric(),
             NumericValue::Float(1.23),
         );
-        // TODO: Make these tests work
-        // assert_eq!(
-        //     Value::String("-12e3".to_string()).coerce_to_numeric(),
-        //     NumericValue::Integer(-12000),
-        // );
-        // assert_eq!(
-        //     Value::String("-12e-3".to_string()).coerce_to_numeric(),
-        //     NumericValue::Float(-12e-3),
-        // );
+        assert_eq!(
+            Value::String("-12e3".to_string()).coerce_to_numeric(),
+            NumericValue::Integer(-12000),
+        );
+        assert_eq!(
+            Value::String("-12e-3".to_string()).coerce_to_numeric(),
+            NumericValue::Float(-12e-3),
+        );
         assert_eq!(
             Value::String("       123".to_string()).coerce_to_numeric(),
             NumericValue::Integer(123),
