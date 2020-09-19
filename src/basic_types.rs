@@ -17,7 +17,7 @@ enum FieldSeparator {
 pub(crate) struct Context {
     field_separator: FieldSeparator,
     global_variables: StackFrame,
-    function_variables: Option<StackFrame>,
+    function_variables: Vec<StackFrame>,
 }
 
 struct StackFrame {
@@ -45,20 +45,17 @@ impl Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
             global_variables: StackFrame::empty(),
-            function_variables: None,
+            function_variables: vec![],
         }
     }
 
     pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
-        if let Some(frame) = &self.function_variables {
-            if let Some(value) = frame.fetch_variable(variable_name) {
-                return value;
-            }
-        }
+        let last_frame = self.function_variables.last();
 
-        self.global_variables
-            .fetch_variable(variable_name)
-            .unwrap_or(UNINITIALIZED_VALUE.clone())
+        last_frame
+            .and_then(|frame| frame.fetch_variable(variable_name))
+            .or_else(|| self.global_variables.fetch_variable(variable_name))
+            .unwrap_or_else(|| UNINITIALIZED_VALUE.clone())
     }
 
     pub(crate) fn set_field_separator(&mut self, new_separator: &str) {
@@ -70,7 +67,7 @@ impl Context {
     }
 
     pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        if let Some(frame) = &mut self.function_variables {
+        if let Some(frame) = self.function_variables.last_mut() {
             if let Some(_) = frame.fetch_variable(variable_name) {
                 frame.assign_variable(variable_name, value);
                 return;
@@ -165,7 +162,7 @@ mod tests {
 
         let mut frame = StackFrame::empty();
         frame.assign_variable("foo", Value::String("local value".to_string()));
-        context.function_variables = Some(frame);
+        context.function_variables = vec![frame];
 
         assert_eq!(
             context.fetch_variable("foo"),
@@ -180,7 +177,7 @@ mod tests {
     #[test]
     fn assign_during_function_assigns_global() {
         let mut context = Context::empty();
-        context.function_variables = Some(StackFrame::empty());
+        context.function_variables = vec![StackFrame::empty()];
 
         context.assign_variable("foo", Value::String("value".to_string()));
         assert_eq!(
@@ -192,7 +189,11 @@ mod tests {
             Some(Value::String("value".to_string())),
         );
         assert_eq!(
-            context.function_variables.unwrap().fetch_variable("foo"),
+            context
+                .function_variables
+                .last()
+                .unwrap()
+                .fetch_variable("foo"),
             None,
         );
     }
@@ -203,7 +204,7 @@ mod tests {
         let mut frame = StackFrame::empty();
         frame.assign_variable("foo", Value::String("old value".to_string()));
 
-        context.function_variables = Some(frame);
+        context.function_variables = vec![frame];
         context.assign_variable("foo", Value::String("new value".to_string()));
 
         assert_eq!(
@@ -212,7 +213,11 @@ mod tests {
         );
         assert_eq!(context.global_variables.fetch_variable("foo"), None,);
         assert_eq!(
-            context.function_variables.unwrap().fetch_variable("foo"),
+            context
+                .function_variables
+                .last()
+                .unwrap()
+                .fetch_variable("foo"),
             Some(Value::String("new value".to_string())),
         );
     }
