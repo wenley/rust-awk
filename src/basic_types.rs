@@ -16,21 +16,36 @@ enum FieldSeparator {
 
 pub(crate) struct Context {
     field_separator: FieldSeparator,
+    global_variables: StackFrame,
+}
+
+struct StackFrame {
     variables: HashMap<String, Value>,
+}
+
+impl StackFrame {
+    fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
+        self.variables.get(variable_name).map(|val| val.clone())
+    }
+
+    fn assign_variable(&mut self, variable_name: &str, value: Value) {
+        self.variables.insert(variable_name.to_string(), value);
+    }
 }
 
 impl Context {
     pub(crate) fn empty() -> Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
-            variables: HashMap::new(),
+            global_variables: StackFrame {
+                variables: HashMap::new(),
+            },
         }
     }
 
     pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
-        self.variables
-            .get(variable_name)
-            .map(|val| val.clone())
+        self.global_variables
+            .fetch_variable(variable_name)
             .unwrap_or(UNINITIALIZED_VALUE.clone())
     }
 
@@ -43,7 +58,7 @@ impl Context {
     }
 
     pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        self.variables.insert(variable_name.to_string(), value);
+        self.global_variables.assign_variable(variable_name, value);
     }
 
     pub(super) fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
