@@ -1,7 +1,6 @@
 use crate::value::Value;
 use regex;
 use std::collections::HashMap;
-use std::ops::Index;
 
 use crate::function::{FunctionDefinition, StackFrame};
 
@@ -10,7 +9,7 @@ pub(crate) struct Record<'a> {
     pub(crate) fields: Vec<&'a str>,
 }
 
-static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
+pub(crate) static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
 
 enum FieldSeparator {
     Character(char),
@@ -62,34 +61,14 @@ impl Context {
         self.global_variables.assign_variable(variable_name, value);
     }
 
-    pub(crate) fn push_stack(&mut self, function_name: &str, variables: Vec<Value>) {
-        match self.functions.get(function_name) {
-            None => panic!("calling undefined function {}", function_name),
-            Some(def) => {
-                let variable_names = &def.variable_names;
-                let (num, expected_num) = (variables.len(), variable_names.len());
-                if num > expected_num {
-                    panic!(
-                        "function {} called with {} args, uses only {}",
-                        function_name, num, expected_num
-                    );
-                }
-
-                let mut frame = StackFrame::empty();
-                for i in 0..variables.len() {
-                    let (name, value) = (variable_names.index(i), variables[i].clone());
-                    frame.assign_variable(name, value);
-                }
-                for i in variables.len()..variable_names.len() {
-                    frame.assign_variable(variable_names.index(i), UNINITIALIZED_VALUE.clone());
-                }
-                self.function_variables.push(frame);
-            }
-        }
-    }
-
-    pub(crate) fn pop_stack(&mut self) {
+    pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
+    where
+        F: Fn(&mut Context) -> T,
+    {
+        self.function_variables.push(frame);
+        let output = f(self);
         self.function_variables.pop();
+        output
     }
 
     pub(super) fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
