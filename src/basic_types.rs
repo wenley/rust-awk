@@ -17,6 +17,7 @@ enum FieldSeparator {
 pub(crate) struct Context {
     field_separator: FieldSeparator,
     global_variables: StackFrame,
+    function_variables: Option<StackFrame>,
 }
 
 struct StackFrame {
@@ -44,10 +45,17 @@ impl Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
             global_variables: StackFrame::empty(),
+            function_variables: None,
         }
     }
 
     pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
+        if let Some(frame) = &self.function_variables {
+            if let Some(value) = frame.fetch_variable(variable_name) {
+                return value;
+            }
+        }
+
         self.global_variables
             .fetch_variable(variable_name)
             .unwrap_or(UNINITIALIZED_VALUE.clone())
@@ -62,6 +70,13 @@ impl Context {
     }
 
     pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
+        if let Some(frame) = &mut self.function_variables {
+            if let Some(_) = frame.fetch_variable(variable_name) {
+                frame.assign_variable(variable_name, value);
+                return;
+            }
+        }
+
         self.global_variables.assign_variable(variable_name, value);
     }
 
@@ -140,5 +155,65 @@ mod tests {
             true
         );
         assert_eq!(Value::Uninitialized.coercion_to_boolean(), false);
+    }
+
+    #[test]
+    fn function_variables_can_fetch() {
+        let mut context = Context::empty();
+        context.assign_variable("foo", Value::String("global value".to_string()));
+        context.assign_variable("car", Value::String("global car".to_string()));
+
+        let mut frame = StackFrame::empty();
+        frame.assign_variable("foo", Value::String("local value".to_string()));
+        context.function_variables = Some(frame);
+
+        assert_eq!(
+            context.fetch_variable("foo"),
+            Value::String("local value".to_string()),
+        );
+        assert_eq!(
+            context.fetch_variable("car"),
+            Value::String("global car".to_string()),
+        );
+    }
+
+    #[test]
+    fn assign_during_function_assigns_global() {
+        let mut context = Context::empty();
+        context.function_variables = Some(StackFrame::empty());
+
+        context.assign_variable("foo", Value::String("value".to_string()));
+        assert_eq!(
+            context.fetch_variable("foo"),
+            Value::String("value".to_string()),
+        );
+        assert_eq!(
+            context.global_variables.fetch_variable("foo"),
+            Some(Value::String("value".to_string())),
+        );
+        assert_eq!(
+            context.function_variables.unwrap().fetch_variable("foo"),
+            None,
+        );
+    }
+
+    #[test]
+    fn assign_to_function_variable_goes_local() {
+        let mut context = Context::empty();
+        let mut frame = StackFrame::empty();
+        frame.assign_variable("foo", Value::String("old value".to_string()));
+
+        context.function_variables = Some(frame);
+        context.assign_variable("foo", Value::String("new value".to_string()));
+
+        assert_eq!(
+            context.fetch_variable("foo"),
+            Value::String("new value".to_string()),
+        );
+        assert_eq!(context.global_variables.fetch_variable("foo"), None,);
+        assert_eq!(
+            context.function_variables.unwrap().fetch_variable("foo"),
+            Some(Value::String("new value".to_string())),
+        );
     }
 }
