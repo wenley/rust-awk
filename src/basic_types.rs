@@ -3,7 +3,7 @@ use regex;
 use std::collections::HashMap;
 use std::ops::Index;
 
-use crate::function::FunctionDefinition;
+use crate::function::{FunctionDefinition, StackFrame};
 
 pub(crate) struct Record<'a> {
     pub(crate) full_line: &'a str,
@@ -22,26 +22,6 @@ pub(crate) struct Context {
     global_variables: StackFrame,
     functions: HashMap<String, FunctionDefinition>,
     function_variables: Vec<StackFrame>,
-}
-
-struct StackFrame {
-    variables: HashMap<String, Value>,
-}
-
-impl StackFrame {
-    fn empty() -> StackFrame {
-        StackFrame {
-            variables: HashMap::new(),
-        }
-    }
-
-    fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
-        self.variables.get(variable_name).map(|val| val.clone())
-    }
-
-    fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        self.variables.insert(variable_name.to_string(), value);
-    }
 }
 
 impl Context {
