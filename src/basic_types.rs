@@ -1,6 +1,7 @@
 use crate::value::Value;
 use regex;
 use std::collections::HashMap;
+use std::ops::Index;
 
 pub(crate) struct Record<'a> {
     pub(crate) full_line: &'a str,
@@ -17,11 +18,16 @@ enum FieldSeparator {
 pub(crate) struct Context {
     field_separator: FieldSeparator,
     global_variables: StackFrame,
+    functions: HashMap<String, FunctionSignature>,
     function_variables: Vec<StackFrame>,
 }
 
 struct StackFrame {
     variables: HashMap<String, Value>,
+}
+
+struct FunctionSignature {
+    variable_names: Vec<String>,
 }
 
 impl StackFrame {
@@ -44,6 +50,7 @@ impl Context {
     pub(crate) fn empty() -> Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
+            functions: HashMap::new(),
             global_variables: StackFrame::empty(),
             function_variables: vec![],
         }
@@ -75,6 +82,35 @@ impl Context {
         }
 
         self.global_variables.assign_variable(variable_name, value);
+    }
+
+    pub(crate) fn push_stack(&mut self, function_name: &str, variables: Vec<Value>) {
+        match self.functions.get(function_name) {
+            None => panic!("calling undefined function {}", function_name),
+            Some(FunctionSignature { variable_names }) => {
+                let (num, expected_num) = (variables.len(), variable_names.len());
+                if num > expected_num {
+                    panic!(
+                        "function {} called with {} args, uses only {}",
+                        function_name, num, expected_num
+                    );
+                }
+
+                let mut frame = StackFrame::empty();
+                for i in 0..variables.len() {
+                    let (name, value) = (variable_names.index(i), variables[i].clone());
+                    frame.assign_variable(name, value);
+                }
+                for i in variables.len()..variable_names.len() {
+                    frame.assign_variable(variable_names.index(i), UNINITIALIZED_VALUE.clone());
+                }
+                self.function_variables.push(frame);
+            }
+        }
+    }
+
+    pub(crate) fn pop_stack(&mut self) {
+        self.function_variables.pop();
     }
 
     pub(super) fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
