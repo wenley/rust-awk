@@ -24,6 +24,12 @@ struct StackFrame {
 }
 
 impl StackFrame {
+    fn empty() -> StackFrame {
+        StackFrame {
+            variables: HashMap::new(),
+        }
+    }
+
     fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
         self.variables.get(variable_name).map(|val| val.clone())
     }
@@ -37,9 +43,7 @@ impl Context {
     pub(crate) fn empty() -> Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
-            global_variables: StackFrame {
-                variables: HashMap::new(),
-            },
+            global_variables: StackFrame::empty(),
         }
     }
 
