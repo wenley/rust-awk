@@ -18,11 +18,12 @@ mod binary_comparison;
 mod binary_math;
 mod boolean;
 mod field_reference;
+// mod function;
 mod literal;
 mod regex_match;
-mod variable;
+pub(crate) mod variable;
 
-pub use variable::parse_variable_name;
+pub(crate) use variable::parse_variable_name;
 
 pub(crate) trait Expression: Debug {
     fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value;

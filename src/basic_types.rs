@@ -3,6 +3,8 @@ use regex;
 use std::collections::HashMap;
 use std::ops::Index;
 
+use crate::function::FunctionDefinition;
+
 pub(crate) struct Record<'a> {
     pub(crate) full_line: &'a str,
     pub(crate) fields: Vec<&'a str>,
@@ -18,16 +20,12 @@ enum FieldSeparator {
 pub(crate) struct Context {
     field_separator: FieldSeparator,
     global_variables: StackFrame,
-    functions: HashMap<String, FunctionSignature>,
+    functions: HashMap<String, FunctionDefinition>,
     function_variables: Vec<StackFrame>,
 }
 
 struct StackFrame {
     variables: HashMap<String, Value>,
-}
-
-struct FunctionSignature {
-    variable_names: Vec<String>,
 }
 
 impl StackFrame {
@@ -87,7 +85,8 @@ impl Context {
     pub(crate) fn push_stack(&mut self, function_name: &str, variables: Vec<Value>) {
         match self.functions.get(function_name) {
             None => panic!("calling undefined function {}", function_name),
-            Some(FunctionSignature { variable_names }) => {
+            Some(def) => {
+                let variable_names = &def.variable_names;
                 let (num, expected_num) = (variables.len(), variable_names.len());
                 if num > expected_num {
                     panic!(

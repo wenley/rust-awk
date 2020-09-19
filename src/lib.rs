@@ -4,6 +4,7 @@ extern crate regex;
 mod action;
 mod basic_types;
 mod expression;
+mod function;
 mod item;
 mod parse_args;
 mod pattern;
