@@ -18,7 +18,7 @@ mod binary_comparison;
 mod binary_math;
 mod boolean;
 mod field_reference;
-// mod function;
+mod function;
 mod literal;
 mod regex_match;
 pub(crate) mod variable;
