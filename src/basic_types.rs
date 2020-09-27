@@ -38,7 +38,6 @@ impl <'a>MutableContext<'a> {
             None => Value::String("".to_string()),
             Some(record) => match index {
                 i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
-                // TODO: go through context to get these fields
                 i if i == 0 => Value::String(record.full_line.to_string()),
                 i => record
                     .fields
