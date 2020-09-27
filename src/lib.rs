@@ -21,7 +21,7 @@ mod pattern;
 mod value;
 
 use crate::{
-    basic_types::{MutableContext, Record, VariableStore, Variables},
+    basic_types::{MutableContext, VariableStore, Variables},
     function::{parse_function, FunctionDefinition, Functions},
     item::{parse_item, Item},
 };
@@ -101,10 +101,7 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
 
 impl ProgramRun {
     pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
-        let mut record = Record {
-            full_line: line,
-            fields: self.split(line),
-        };
+        let mut record = self.variables.record_for_line(line);
         // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
         let mut context = MutableContext {
@@ -136,10 +133,6 @@ impl ProgramRun {
             self.variables
                 .assign_variable(name, value::Value::String(value.to_string()));
         }
-    }
-
-    fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
-        self.variables.split(line)
     }
 }
 

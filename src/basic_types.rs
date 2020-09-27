@@ -109,11 +109,15 @@ impl Variables {
         output
     }
 
-    pub(super) fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
-        match &self.field_separator {
+    pub(super) fn record_for_line<'a>(&self, line: &'a str) -> Record<'a> {
+        let fields = match &self.field_separator {
             FieldSeparator::Character(' ') => line.split_whitespace().collect(),
             FieldSeparator::Character(c1) => line.split(|c2| *c1 == c2).collect(),
             FieldSeparator::Regex(re) => re.split(line).collect(),
+        };
+        Record {
+            full_line: line,
+            fields: fields,
         }
     }
 }
