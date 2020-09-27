@@ -10,6 +10,12 @@ pub(crate) struct Record<'a> {
 
 pub(crate) static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
 
+pub(crate) trait VariableStore {
+    fn fetch_variable(&self, variable_name: &str) -> Value;
+
+    fn assign_variable(&mut self, variable_name: &str, value: Value);
+}
+
 enum FieldSeparator {
     Character(char),
     Regex(regex::Regex),
@@ -26,13 +32,35 @@ pub(crate) struct MutableContext<'a> {
     pub(crate) record: &'a Record<'a>,
 }
 
-impl MutableContext<'_> {
-    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
+impl VariableStore for MutableContext<'_> {
+    fn fetch_variable(&self, variable_name: &str) -> Value {
         self.variables.fetch_variable(variable_name)
     }
 
-    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
+    fn assign_variable(&mut self, variable_name: &str, value: Value) {
         self.variables.assign_variable(variable_name, value);
+    }
+}
+
+impl VariableStore for Variables {
+    fn fetch_variable(&self, variable_name: &str) -> Value {
+        let last_frame = self.function_variables.last();
+
+        last_frame
+            .and_then(|frame| frame.fetch_variable(variable_name))
+            .or_else(|| self.global_variables.fetch_variable(variable_name))
+            .unwrap_or_else(|| UNINITIALIZED_VALUE.clone())
+    }
+
+    fn assign_variable(&mut self, variable_name: &str, value: Value) {
+        if let Some(frame) = self.function_variables.last_mut() {
+            if let Some(_) = frame.fetch_variable(variable_name) {
+                frame.assign_variable(variable_name, value);
+                return;
+            }
+        }
+
+        self.global_variables.assign_variable(variable_name, value);
     }
 }
 
@@ -45,32 +73,12 @@ impl Variables {
         }
     }
 
-    fn fetch_variable(&self, variable_name: &str) -> Value {
-        let last_frame = self.function_variables.last();
-
-        last_frame
-            .and_then(|frame| frame.fetch_variable(variable_name))
-            .or_else(|| self.global_variables.fetch_variable(variable_name))
-            .unwrap_or_else(|| UNINITIALIZED_VALUE.clone())
-    }
-
     pub(crate) fn set_field_separator(&mut self, new_separator: &str) {
         if new_separator.len() == 1 {
             self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
         } else {
             self.field_separator = FieldSeparator::Regex(regex::Regex::new(new_separator).unwrap())
         }
-    }
-
-    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        if let Some(frame) = self.function_variables.last_mut() {
-            if let Some(_) = frame.fetch_variable(variable_name) {
-                frame.assign_variable(variable_name, value);
-                return;
-            }
-        }
-
-        self.global_variables.assign_variable(variable_name, value);
     }
 
     pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T

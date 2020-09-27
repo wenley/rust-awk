@@ -21,7 +21,7 @@ mod pattern;
 mod value;
 
 use crate::{
-    basic_types::{MutableContext, Record, Variables},
+    basic_types::{MutableContext, Record, VariableStore, Variables},
     function::{parse_function, FunctionDefinition, Functions},
     item::{parse_item, Item},
 };

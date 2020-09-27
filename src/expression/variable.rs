@@ -3,7 +3,11 @@ use regex::Regex;
 use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
-use crate::{basic_types::MutableContext, function::Functions, value::Value};
+use crate::{
+    basic_types::{MutableContext, VariableStore},
+    function::Functions,
+    value::Value,
+};
 
 #[derive(Debug)]
 struct Variable {

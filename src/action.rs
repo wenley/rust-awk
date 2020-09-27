@@ -243,7 +243,7 @@ fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::{Record, VariableStore, Variables};
     use crate::function::Functions;
     use crate::value::{NumericValue, Value};
     use std::collections::HashMap;
