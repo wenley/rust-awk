@@ -83,7 +83,7 @@ mod tests {
         variables.assign_variable("foo", value.clone());
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
 
         assert_eq!(

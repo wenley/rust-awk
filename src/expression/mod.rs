@@ -104,7 +104,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
 
         let result = parse_expression("( 1 )");
@@ -127,7 +127,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
 
         let result = parse_expression("1 && 1 || 0 && 1");

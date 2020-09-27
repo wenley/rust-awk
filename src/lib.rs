@@ -109,7 +109,7 @@ impl ProgramRun {
         let functions = &self.program.functions;
         let mut context = MutableContext {
             variables: &mut self.variables,
-            record: &mut record,
+            record: Some(&mut record),
         };
 
         self.program

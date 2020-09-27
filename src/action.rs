@@ -264,7 +264,7 @@ mod tests {
         let (functions, mut empty_variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut empty_variables,
-            record: &record,
+            record: Some(&record),
         };
         let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
@@ -278,7 +278,7 @@ mod tests {
         let (functions, mut empty_variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut empty_variables,
-            record: &record,
+            record: Some(&record),
         };
 
         let if_conditional = parse_action(
@@ -319,7 +319,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
 
         let assign_action = parse_action(
@@ -341,7 +341,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let result = parse_print_statement(r#"print("hello")"#);
         assert!(result.is_ok());
@@ -374,7 +374,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let result = parse_simple_statement(
             r#"if (1) {
@@ -396,7 +396,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let result = parse_simple_statement(
             r#"while (0) {
@@ -419,7 +419,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let result = parse_simple_statement(
             r#"do {
@@ -440,7 +440,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let result = parse_simple_statement(r#"variable = "hi""#);
         let empty_vec: Vec<&'static str> = vec![];

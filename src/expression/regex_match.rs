@@ -105,7 +105,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let parser = regex_parser(addition_parser(parse_literal));
 

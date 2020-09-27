@@ -168,7 +168,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let parser = and_parser(parse_literal);
 
@@ -199,7 +199,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let parser = or_parser(parse_literal);
 
@@ -237,7 +237,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let parser = not_parser(parse_literal);
 
@@ -282,7 +282,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let parser = not_parser(parse_literal);
 

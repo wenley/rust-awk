@@ -36,9 +36,10 @@ impl Expression for FieldReference {
         match unsafe_index {
             i if i < 0 => panic!("Field indexes cannot be negative: {}", unsafe_index),
             // TODO: go through context to get these fields
-            i if i == 0 => Value::String(context.record.full_line.to_string()),
+            i if i == 0 => Value::String(context.record.unwrap().full_line.to_string()),
             i => context
                 .record
+                .unwrap()
                 .fields
                 .get((i - 1) as usize)
                 .map(|s| Value::String(s.to_string()))
@@ -88,7 +89,7 @@ mod tests {
         record.fields = vec!["first", "second"];
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
 
         assert_eq!(
@@ -105,7 +106,7 @@ mod tests {
         let (functions, mut variables, mut record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let parser = field_reference_parser(parse_literal);
 
@@ -120,7 +121,7 @@ mod tests {
         record.fields = vec!["hello"];
         context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         assert_eq!(
             expression.evaluate(&functions, &mut context),
@@ -140,7 +141,7 @@ mod tests {
     //     let (functions, mut variables, mut record) = empty_variables_and_record();
     //     let mut context = MutableContext {
     //         variables: &mut variables,
-    //         record: &record,
+    //         record: Some(&record),
     //     };
     //     record.fields = vec!["2", "3", "hello"];
 

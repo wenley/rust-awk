@@ -37,7 +37,7 @@ impl Item {
             };
             let mut context = MutableContext {
                 variables: variables,
-                record: &empty_record,
+                record: Some(&empty_record),
             };
             self.action.output_for_line(functions, &mut context)
         } else {
@@ -76,13 +76,13 @@ mod tests {
     #[test]
     fn test_full_item_parsing() {
         let (functions, mut variables, _) = empty_variables_and_record();
-        let mut record = Record {
+        let record = Record {
             full_line: "hello world today",
             fields: vec!["hello", "world", "today"],
         };
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &mut record,
+            record: Some(&record),
         };
         let empty_string_vec: Vec<&'static str> = vec![];
 

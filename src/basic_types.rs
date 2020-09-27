@@ -29,7 +29,7 @@ pub(crate) struct Variables {
 
 pub(crate) struct MutableContext<'a> {
     pub(crate) variables: &'a mut Variables,
-    pub(crate) record: &'a Record<'a>,
+    pub(crate) record: Option<&'a Record<'a>>,
 }
 
 impl VariableStore for MutableContext<'_> {

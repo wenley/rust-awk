@@ -116,7 +116,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
         let string = Literal::String("hello".to_string());
         assert_eq!(
@@ -135,7 +135,7 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let mut context = MutableContext {
             variables: &mut variables,
-            record: &record,
+            record: Some(&record),
         };
 
         let result = parse_literal("1");
