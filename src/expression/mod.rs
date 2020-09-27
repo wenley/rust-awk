@@ -29,7 +29,7 @@ pub(crate) trait Expression: Debug {
 }
 
 pub(crate) trait Assign: Debug {
-    fn assign<'a>(&self, context: &mut MutableContext, value: Value);
+    fn assign<'a>(&self, functions: &Functions, context: &mut MutableContext, value: Value);
 }
 
 type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;

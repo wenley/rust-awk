@@ -25,7 +25,10 @@ impl Expression for Variable {
 }
 
 impl Assign for Variable {
-    fn assign<'a>(&self, context: &mut MutableContext, value: Value) {
+    fn assign<'a>(&self, functions: &Functions, context: &mut MutableContext, value: Value) {
+        if let Some(_) = functions.get(&self.variable_name) {
+            panic!("can't assign to {}; it's a function", self.variable_name);
+        }
         context.assign_variable(&self.variable_name, value);
     }
 }
@@ -61,7 +64,7 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 mod tests {
     use super::*;
     use crate::basic_types::{Record, Variables};
-    use crate::function::Functions;
+    use crate::function::{parse_function, Functions};
     use crate::value::NumericValue;
     use std::collections::HashMap;
 
@@ -88,5 +91,27 @@ mod tests {
             .evaluate(&functions, &mut context),
             value,
         );
+    }
+
+    #[test]
+    #[should_panic]
+    fn blocks_name_collisions() {
+        let (mut functions, mut variables, record) = empty_variables_and_record();
+        let value = Value::Numeric(NumericValue::Integer(1));
+        let result = parse_function(r#"function foo(a) {}"#);
+        assert!(result.is_ok());
+        let function = result.unwrap().1;
+        functions.insert("foo".to_string(), function);
+
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
+
+        let result = parse_assignable_variable("foo");
+        assert!(result.is_ok());
+        let assignment = result.unwrap().1;
+
+        assignment.assign(&functions, &mut context, value);
     }
 }
