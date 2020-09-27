@@ -72,16 +72,7 @@ impl FunctionDefinition {
         // Right now, a function can only be invoked as a Statement with printable outputs.
         // In the future, a function will need to be both a "statement" (returning outputs) AND an
         // expression (having a nestable value)
-        let record = context.record;
-        context.variables.with_stack_frame(frame, |v| {
-            self.body.output_for_line(
-                functions,
-                &mut MutableContext {
-                    variables: v,
-                    record: record,
-                },
-            )
-        })
+        context.with_stack_frame(frame, |c| self.body.output_for_line(functions, c))
     }
 }
 

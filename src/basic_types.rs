@@ -47,6 +47,16 @@ impl<'a> MutableContext<'a> {
             },
         }
     }
+
+    pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
+    where
+        F: FnOnce(&mut Self) -> T,
+    {
+        self.variables.function_variables.push(frame);
+        let output = f(self);
+        self.variables.function_variables.pop();
+        output
+    }
 }
 
 impl VariableStore for MutableContext<'_> {
@@ -96,16 +106,6 @@ impl Variables {
         } else {
             self.field_separator = FieldSeparator::Regex(regex::Regex::new(new_separator).unwrap())
         }
-    }
-
-    pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
-    where
-        F: Fn(&mut Variables) -> T,
-    {
-        self.function_variables.push(frame);
-        let output = f(self);
-        self.function_variables.pop();
-        output
     }
 
     pub(super) fn record_for_line<'a>(&self, line: &'a str) -> Record<'a> {
