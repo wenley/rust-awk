@@ -93,7 +93,7 @@ mod tests {
         // Assert no panic
         let result = parse_function_call(r#"foo("first", a, 1 + 2, $0)"#);
         assert!(result.is_ok());
-        let (remaining, call) = result.unwrap();
+        let (remaining, _call) = result.unwrap();
         assert_eq!(remaining, "");
     }
 }
