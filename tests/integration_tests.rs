@@ -75,7 +75,7 @@ fn accepts_dash_f_to_specify_file() {
             "rust-awk",
             "--",
             "-f",
-            "tests/test_cases/echo_program/program.awk",
+            "tests/test_cases/echo/program.awk",
         ]),
         "hello",
     );
