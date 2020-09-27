@@ -10,7 +10,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::{NumericValue, Value},
 };
@@ -36,16 +36,16 @@ impl Expression for BinaryBoolean {
     fn evaluate<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &'a Record,
     ) -> Value {
         let left_value = self
             .left
-            .evaluate(functions, context, record)
+            .evaluate(functions, variables, record)
             .coercion_to_boolean();
         let right_value = self
             .right
-            .evaluate(functions, context, record)
+            .evaluate(functions, variables, record)
             .coercion_to_boolean();
 
         let result = match &self.operator {
@@ -70,12 +70,12 @@ impl Expression for NotBoolean {
     fn evaluate<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &'a Record,
     ) -> Value {
         let value = self
             .expression
-            .evaluate(functions, context, record)
+            .evaluate(functions, variables, record)
             .coercion_to_boolean();
         let int_value = if value { 0 } else { 1 };
         Value::Numeric(NumericValue::Integer(int_value))
@@ -164,10 +164,10 @@ mod tests {
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         (
             HashMap::new(),
-            Context::empty(),
+            Variables::empty(),
             Record {
                 full_line: "",
                 fields: vec![],
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_and_parsing() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let parser = and_parser(parse_literal);
 
         let result = parser(r#""a" && 1"#);
@@ -186,7 +186,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -196,7 +196,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
@@ -206,14 +206,14 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
 
     #[test]
     fn test_or_parsing() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let parser = or_parser(parse_literal);
 
         let result = parser(r#""a" || 1"#);
@@ -222,7 +222,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -232,7 +232,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -242,7 +242,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -252,14 +252,14 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
 
     #[test]
     fn test_not_parsing() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let parser = not_parser(parse_literal);
 
         let result = parser(r#"!1"#);
@@ -268,7 +268,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
@@ -278,7 +278,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -288,7 +288,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
@@ -298,7 +298,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -308,14 +308,14 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
 
     #[test]
     fn test_iteration_compression() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let parser = not_parser(parse_literal);
 
         let result = parser(r#""abc""#);
@@ -324,7 +324,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::String("abc".to_string()),
         );
 
@@ -334,7 +334,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }

@@ -9,7 +9,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::{NumericValue, Value},
 };
@@ -39,16 +39,16 @@ impl Expression for BinaryMath {
     fn evaluate<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &'a Record,
     ) -> Value {
         let left_value = self
             .left
-            .evaluate(functions, context, record)
+            .evaluate(functions, variables, record)
             .coerce_to_numeric();
         let right_value = self
             .right
-            .evaluate(functions, context, record)
+            .evaluate(functions, variables, record)
             .coerce_to_numeric();
 
         match (&self.operator, left_value, right_value) {
@@ -194,10 +194,10 @@ mod tests {
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         (
             HashMap::new(),
-            Context::empty(),
+            Variables::empty(),
             Record {
                 full_line: "",
                 fields: vec![],
@@ -207,21 +207,21 @@ mod tests {
 
     #[test]
     fn binary_expressions_can_evaluate() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         assert_eq!(
             BinaryMath {
                 left: Box::new(Literal::Numeric(NumericValue::Integer(2))),
                 operator: Operator::Add,
                 right: Box::new(Literal::Numeric(NumericValue::Integer(3))),
             }
-            .evaluate(&functions, &mut context, &record),
+            .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(5)),
         );
     }
 
     #[test]
     fn binary_expressions_can_parse() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let parser = addition_parser(multiplication_parser(parse_literal));
 
         let result = parser("1 + 2 - 3 + 4 - 5.5");
@@ -230,7 +230,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Float(-1.5)),
         );
 
@@ -240,7 +240,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(14)),
         );
 
@@ -250,7 +250,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             // Floating point error!
             Value::Numeric(NumericValue::Float(1.5999999999999999)),
         );
@@ -261,7 +261,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(2)),
         );
 
@@ -271,7 +271,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Float(1.3333333333333333)),
         );
     }

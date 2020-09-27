@@ -10,7 +10,7 @@ use nom::{
 
 use super::{parse_expression, variable::parse_variable_name, Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::Value,
 };
@@ -25,7 +25,7 @@ impl Expression for FunctionCall {
     fn evaluate<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &'a Record,
     ) -> Value {
         let function = match functions.get(&self.name) {
@@ -35,11 +35,11 @@ impl Expression for FunctionCall {
         let values: Vec<Value> = self
             .arguments
             .iter()
-            .map(|exp| exp.evaluate(functions, context, record))
+            .map(|exp| exp.evaluate(functions, variables, record))
             .collect();
 
         // TODO: Capture this output
-        function.invoke_with(values, functions, context, record);
+        function.invoke_with(values, functions, variables, record);
 
         // TODO: Actually return a proper return value
         Value::String("".to_string())

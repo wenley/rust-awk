@@ -6,7 +6,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     expression::{parse_expression, Expression},
     function::Functions,
 };
@@ -22,7 +22,7 @@ impl Pattern {
     pub(crate) fn matches<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &Record<'a>,
     ) -> bool {
         match self {
@@ -30,7 +30,7 @@ impl Pattern {
             Pattern::Expression(expression) => match expression.regex() {
                 Some(regex) => regex.is_match(record.full_line),
                 None => expression
-                    .evaluate(functions, context, record)
+                    .evaluate(functions, variables, record)
                     .coercion_to_boolean(),
             },
             Pattern::Begin => false,

@@ -10,7 +10,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::Value,
 };
@@ -30,7 +30,7 @@ pub(crate) trait Expression: Debug {
     fn evaluate<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &'a Record,
     ) -> Value;
 
@@ -38,7 +38,7 @@ pub(crate) trait Expression: Debug {
 }
 
 pub(crate) trait Assign: Debug {
-    fn assign<'a>(&self, context: &mut Context, record: &'a Record, value: Value);
+    fn assign<'a>(&self, variables: &mut Variables, record: &'a Record, value: Value);
 }
 
 type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;
@@ -96,10 +96,10 @@ mod tests {
     use crate::value::NumericValue;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         (
             HashMap::new(),
-            Context::empty(),
+            Variables::empty(),
             Record {
                 full_line: "",
                 fields: vec![],
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_parse_parens() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
 
         let result = parse_expression("( 1 )");
         assert_eq!(result.is_ok(), true);
@@ -117,7 +117,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1))
         );
 
@@ -127,14 +127,14 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Float(3.5))
         );
     }
 
     #[test]
     fn test_boolean_precedence() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
 
         let result = parse_expression("1 && 1 || 0 && 1");
         assert_eq!(result.is_ok(), true);
@@ -142,7 +142,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1))
         );
 
@@ -152,7 +152,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0))
         );
 
@@ -162,7 +162,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1))
         );
     }

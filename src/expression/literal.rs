@@ -8,7 +8,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::{parse_numeric, NumericValue, Value},
 };
@@ -34,7 +34,7 @@ impl Expression for Literal {
     fn evaluate<'a>(
         &self,
         _functions: &Functions,
-        _context: &mut Context,
+        _variables: &mut Variables,
         _record: &'a Record,
     ) -> Value {
         match self {
@@ -104,10 +104,10 @@ mod tests {
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         (
             HashMap::new(),
-            Context::empty(),
+            Variables::empty(),
             Record {
                 full_line: "",
                 fields: vec![],
@@ -117,22 +117,22 @@ mod tests {
 
     #[test]
     fn literals_can_evaluate() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let string = Literal::String("hello".to_string());
         assert_eq!(
-            string.evaluate(&functions, &mut context, &record),
+            string.evaluate(&functions, &mut variables, &record),
             Value::String("hello".to_string())
         );
         let numeric = Literal::Numeric(NumericValue::Integer(0));
         assert_eq!(
-            numeric.evaluate(&functions, &mut context, &record),
+            numeric.evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(0))
         );
     }
 
     #[test]
     fn test_parse_literals() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
 
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);
@@ -140,7 +140,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::Numeric(NumericValue::Integer(1))
         );
 
@@ -150,7 +150,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::String("hello".to_string()),
         );
 
@@ -160,7 +160,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::String("hello world".to_string()),
         );
     }

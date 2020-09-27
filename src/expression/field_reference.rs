@@ -9,7 +9,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::{NumericValue, Value},
 };
@@ -27,12 +27,12 @@ impl Expression for FieldReference {
     fn evaluate<'a>(
         &self,
         functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         record: &'a Record,
     ) -> Value {
         let value = self
             .expression
-            .evaluate(functions, context, record)
+            .evaluate(functions, variables, record)
             .coerce_to_numeric();
         let unsafe_index = match value {
             NumericValue::Integer(i) => i,
@@ -73,10 +73,10 @@ mod tests {
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         (
             HashMap::new(),
-            Context::empty(),
+            Variables::empty(),
             Record {
                 full_line: "",
                 fields: vec![],
@@ -86,34 +86,34 @@ mod tests {
 
     #[test]
     fn field_reference_can_evaluate() {
-        let (functions, mut context, mut record) = empty_context_and_record();
+        let (functions, mut variables, mut record) = empty_variables_and_record();
         record.fields = vec!["first", "second"];
 
         assert_eq!(
             FieldReference {
                 expression: Box::new(Literal::Numeric(NumericValue::Integer(1)))
             }
-            .evaluate(&functions, &mut context, &record),
+            .evaluate(&functions, &mut variables, &record),
             Value::String("first".to_string()),
         );
     }
 
     #[test]
     fn test_parse_field_reference() {
-        let (functions, mut context, mut record) = empty_context_and_record();
+        let (functions, mut variables, mut record) = empty_variables_and_record();
         let parser = field_reference_parser(parse_literal);
 
         let result = parser("$1");
         assert_eq!(result.is_ok(), true);
         let expression = result.unwrap().1;
         assert_eq!(
-            expression.evaluate(&functions, &mut context, &record),
+            expression.evaluate(&functions, &mut variables, &record),
             Value::Uninitialized,
         );
 
         record.fields = vec!["hello"];
         assert_eq!(
-            expression.evaluate(&functions, &mut context, &record),
+            expression.evaluate(&functions, &mut variables, &record),
             Value::String("hello".to_string()),
         );
 
@@ -123,14 +123,14 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .evaluate(&functions, &mut context, &record),
+                .evaluate(&functions, &mut variables, &record),
             Value::String("hello".to_string()),
         );
     }
 
     // #[test]
     // fn test_nested_field_references() {
-    //     let (functions, mut context, mut record) = empty_context_and_record();
+    //     let (functions, mut variables, mut record) = empty_variables_and_record();
     //     record.fields = vec!["2", "3", "hello"];
 
     //     let parser = field_reference_parser(parse_literal);
@@ -138,7 +138,7 @@ mod tests {
     //     assert!(result.is_ok(), true);
     //     let expression = result.unwrap().1;
     //     assert_eq!(
-    //         expression.evaluate(&functions, &mut context, &record),
+    //         expression.evaluate(&functions, &mut variables, &record),
     //         Value::String("hello".to_string()),
     //     );
     // }

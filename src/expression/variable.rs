@@ -4,7 +4,7 @@ use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{Record, Variables},
     function::Functions,
     value::Value,
 };
@@ -22,16 +22,16 @@ impl Expression for Variable {
     fn evaluate<'a>(
         &self,
         _functions: &Functions,
-        context: &mut Context,
+        variables: &mut Variables,
         _record: &'a Record,
     ) -> Value {
-        context.fetch_variable(&self.variable_name)
+        variables.fetch_variable(&self.variable_name)
     }
 }
 
 impl Assign for Variable {
-    fn assign<'a>(&self, context: &mut Context, _record: &'a Record, value: Value) {
-        context.assign_variable(&self.variable_name, value);
+    fn assign<'a>(&self, variables: &mut Variables, _record: &'a Record, value: Value) {
+        variables.assign_variable(&self.variable_name, value);
     }
 }
 
@@ -69,10 +69,10 @@ mod tests {
     use crate::value::NumericValue;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         (
             HashMap::new(),
-            Context::empty(),
+            Variables::empty(),
             Record {
                 full_line: "",
                 fields: vec![],
@@ -82,15 +82,15 @@ mod tests {
 
     #[test]
     fn variables_can_evaluate() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let value = Value::Numeric(NumericValue::Integer(1));
-        context.assign_variable("foo", value.clone());
+        variables.assign_variable("foo", value.clone());
 
         assert_eq!(
             Variable {
                 variable_name: "foo".to_string()
             }
-            .evaluate(&functions, &mut context, &record),
+            .evaluate(&functions, &mut variables, &record),
             value,
         );
     }
