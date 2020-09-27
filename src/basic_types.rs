@@ -22,6 +22,11 @@ pub(crate) struct Variables {
     function_variables: Vec<StackFrame>,
 }
 
+pub(crate) struct MutableContext<'a> {
+    pub(crate) variables: &'a mut Variables,
+    pub(crate) record: &'a Record<'a>,
+}
+
 impl Variables {
     pub(crate) fn empty() -> Variables {
         Variables {

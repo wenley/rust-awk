@@ -2,7 +2,7 @@ use nom::{character::complete::multispace0, combinator::map, sequence::tuple, IR
 
 use crate::{
     action::{parse_action, Action},
-    basic_types::{Record, Variables},
+    basic_types::{MutableContext, Record, Variables},
     function::Functions,
     pattern::{parse_item_pattern, Pattern},
 };
@@ -16,11 +16,10 @@ impl Item {
     pub(crate) fn output_for_line<'a>(
         &self,
         functions: &Functions,
-        variables: &mut Variables,
-        record: &Record<'a>,
+        context: &mut MutableContext<'a>,
     ) -> Vec<String> {
-        if self.pattern.matches(functions, variables, record) {
-            self.action.output_for_line(functions, variables, record)
+        if self.pattern.matches(functions, context.variables, context.record) {
+            self.action.output_for_line(functions, context.variables, context.record)
         } else {
             vec![]
         }
@@ -74,9 +73,13 @@ mod tests {
     #[test]
     fn test_full_item_parsing() {
         let (functions, mut variables, _) = empty_variables_and_record();
-        let record = Record {
+        let mut record = Record {
             full_line: "hello world today",
             fields: vec!["hello", "world", "today"],
+        };
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: &mut record,
         };
         let empty_string_vec: Vec<&'static str> = vec![];
 
@@ -86,7 +89,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .output_for_line(&functions, &mut variables, &record),
+                .output_for_line(&functions, &mut context),
             vec!["hello world today"],
         );
 
@@ -96,7 +99,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .output_for_line(&functions, &mut variables, &record),
+                .output_for_line(&functions, &mut context),
             empty_string_vec,
         );
 
@@ -106,7 +109,7 @@ mod tests {
             result
                 .unwrap()
                 .1
-                .output_for_line(&functions, &mut variables, &record),
+                .output_for_line(&functions, &mut context),
             vec!["today"],
         );
     }
