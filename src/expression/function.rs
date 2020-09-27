@@ -10,7 +10,7 @@ use nom::{
 
 use super::{parse_expression, variable::parse_variable_name, Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Record, Variables},
+    basic_types::{MutableContext, Record, Variables},
     function::Functions,
     value::Value,
 };
@@ -37,9 +37,13 @@ impl Expression for FunctionCall {
             .iter()
             .map(|exp| exp.evaluate(functions, variables, record))
             .collect();
+        let mut context = MutableContext {
+            variables: variables,
+            record: record,
+        };
 
         // TODO: Capture this output
-        function.invoke_with(values, functions, variables, record);
+        function.invoke_with(values, functions, &mut context);
 
         // TODO: Actually return a proper return value
         Value::String("".to_string())
