@@ -3,11 +3,7 @@ use regex::Regex;
 use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
-use crate::{
-    basic_types::{MutableContext, Record, Variables},
-    function::Functions,
-    value::Value,
-};
+use crate::{basic_types::MutableContext, function::Functions, value::Value};
 
 #[derive(Debug)]
 struct Variable {
@@ -25,8 +21,10 @@ impl Expression for Variable {
 }
 
 impl Assign for Variable {
-    fn assign<'a>(&self, variables: &mut Variables, _record: &'a Record, value: Value) {
-        variables.assign_variable(&self.variable_name, value);
+    fn assign<'a>(&self, context: &mut MutableContext, value: Value) {
+        context
+            .variables
+            .assign_variable(&self.variable_name, value);
     }
 }
 
@@ -60,6 +58,7 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use crate::value::NumericValue;
     use std::collections::HashMap;

@@ -9,11 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::{
-    basic_types::{MutableContext, Record, Variables},
-    function::Functions,
-    value::Value,
-};
+use crate::{basic_types::MutableContext, function::Functions, value::Value};
 
 mod binary_comparison;
 mod binary_math;
@@ -33,7 +29,7 @@ pub(crate) trait Expression: Debug {
 }
 
 pub(crate) trait Assign: Debug {
-    fn assign<'a>(&self, variables: &mut Variables, record: &'a Record, value: Value);
+    fn assign<'a>(&self, context: &mut MutableContext, value: Value);
 }
 
 type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;
@@ -87,6 +83,7 @@ fn parse_parens(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use crate::value::NumericValue;
     use std::collections::HashMap;

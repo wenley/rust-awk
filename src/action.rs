@@ -93,7 +93,7 @@ impl Statement {
             Statement::Assign { assignable, value } => {
                 // TODO: Check for function / variable name collision
                 let value = value.evaluate(functions, context);
-                assignable.assign(context.variables, context.record, value);
+                assignable.assign(context, value);
                 vec![]
             }
             Statement::While { condition, body } => {
