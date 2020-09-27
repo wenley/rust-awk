@@ -83,3 +83,14 @@ pub(crate) fn parse_function_call(input: &str) -> ExpressionParseResult {
         }),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_function_parsing() {
+        // Assert no panic
+        parse_function_call(r#"foo("first", a, 1 + 2)"#);
+    }
+}
