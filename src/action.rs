@@ -73,10 +73,7 @@ impl Statement {
             Statement::Print(expressions) => {
                 let output_line = expressions
                     .iter()
-                    .map(|e| {
-                        e.evaluate(functions, context.variables, context.record)
-                            .coerce_to_string()
-                    })
+                    .map(|e| e.evaluate(functions, context).coerce_to_string())
                     .collect::<Vec<String>>()
                     .join(" ");
                 vec![output_line]
@@ -86,9 +83,7 @@ impl Statement {
                 if_branch,
                 else_branch,
             } => {
-                let result = condition
-                    .evaluate(functions, context.variables, context.record)
-                    .coercion_to_boolean();
+                let result = condition.evaluate(functions, context).coercion_to_boolean();
                 if result {
                     if_branch.output_for_line(functions, context)
                 } else {
@@ -97,17 +92,17 @@ impl Statement {
             }
             Statement::Assign { assignable, value } => {
                 // TODO: Check for function / variable name collision
-                let value = value.evaluate(functions, context.variables, context.record);
+                let value = value.evaluate(functions, context);
                 assignable.assign(context.variables, context.record, value);
                 vec![]
             }
             Statement::While { condition, body } => {
-                let mut value = condition.evaluate(functions, context.variables, context.record);
+                let mut value = condition.evaluate(functions, context);
                 let mut output = vec![];
                 loop {
                     if value.coercion_to_boolean() {
                         output.append(&mut body.output_for_line(functions, context));
-                        value = condition.evaluate(functions, context.variables, context.record);
+                        value = condition.evaluate(functions, context);
                     } else {
                         break;
                     }
@@ -118,7 +113,7 @@ impl Statement {
                 let mut output = vec![];
                 loop {
                     output.append(&mut body.output_for_line(functions, context));
-                    let value = condition.evaluate(functions, context.variables, context.record);
+                    let value = condition.evaluate(functions, context);
                     if !value.coercion_to_boolean() {
                         break;
                     }

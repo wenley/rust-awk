@@ -25,7 +25,7 @@ impl Pattern {
             Pattern::Expression(expression) => match expression.regex() {
                 Some(regex) => regex.is_match(context.record.full_line),
                 None => expression
-                    .evaluate(functions, context.variables, context.record)
+                    .evaluate(functions, context)
                     .coercion_to_boolean(),
             },
             Pattern::Begin => false,
