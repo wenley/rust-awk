@@ -8,7 +8,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::MutableContext,
     function::Functions,
     value::{parse_numeric, NumericValue, Value},
 };
@@ -31,12 +31,7 @@ impl Expression for Literal {
         }
     }
 
-    fn evaluate<'a>(
-        &self,
-        _functions: &Functions,
-        _context: &mut Context,
-        _record: &'a Record,
-    ) -> Value {
+    fn evaluate(&self, _functions: &Functions, _context: &mut MutableContext) -> Value {
         match self {
             Literal::String(string) => Value::String(string.clone()),
             Literal::Numeric(numeric) => Value::Numeric(numeric.clone()),
@@ -101,66 +96,65 @@ fn parse_regex_literal(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+        let variables = Variables::empty();
+        let record = variables.record_for_line("");
         (
             HashMap::new(),
-            Context::empty(),
-            Record {
-                full_line: "",
-                fields: vec![],
-            },
+            variables,
+            record,
         )
     }
 
     #[test]
     fn literals_can_evaluate() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
         let string = Literal::String("hello".to_string());
         assert_eq!(
-            string.evaluate(&functions, &mut context, &record),
+            string.evaluate(&functions, &mut context),
             Value::String("hello".to_string())
         );
         let numeric = Literal::Numeric(NumericValue::Integer(0));
         assert_eq!(
-            numeric.evaluate(&functions, &mut context, &record),
+            numeric.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0))
         );
     }
 
     #[test]
     fn test_parse_literals() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
 
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_literal(r#""hello""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::String("hello".to_string()),
         );
 
         let result = parse_literal(r#""hello world""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::String("hello world".to_string()),
         );
     }

@@ -9,11 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::{
-    basic_types::{Context, Record},
-    function::Functions,
-    value::Value,
-};
+use crate::{basic_types::MutableContext, function::Functions, value::Value};
 
 mod binary_comparison;
 mod binary_math;
@@ -27,18 +23,13 @@ pub(crate) mod variable;
 pub(crate) use variable::parse_variable_name;
 
 pub(crate) trait Expression: Debug {
-    fn evaluate<'a>(
-        &self,
-        functions: &Functions,
-        context: &mut Context,
-        record: &'a Record,
-    ) -> Value;
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value;
 
     fn regex<'a>(&'a self) -> Option<&'a Regex>;
 }
 
 pub(crate) trait Assign: Debug {
-    fn assign<'a>(&self, context: &mut Context, record: &'a Record, value: Value);
+    fn assign<'a>(&self, context: &mut MutableContext, value: Value);
 }
 
 type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;
@@ -92,77 +83,70 @@ fn parse_parens(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use crate::value::NumericValue;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+        let variables = Variables::empty();
+        let record = variables.record_for_line("");
         (
             HashMap::new(),
-            Context::empty(),
-            Record {
-                full_line: "",
-                fields: vec![],
-            },
+            variables,
+            record,
         )
     }
 
     #[test]
     fn test_parse_parens() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
 
         let result = parse_expression("( 1 )");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_expression("(1) + (2.5)");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Float(3.5))
         );
     }
 
     #[test]
     fn test_boolean_precedence() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
 
         let result = parse_expression("1 && 1 || 0 && 1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_expression("1 && 0 || 0 && 1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0))
         );
 
         let result = parse_expression("0 || 1 && 0 || 1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1))
         );
     }

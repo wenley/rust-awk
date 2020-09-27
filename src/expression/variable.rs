@@ -4,7 +4,7 @@ use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{MutableContext, VariableStore},
     function::Functions,
     value::Value,
 };
@@ -19,18 +19,13 @@ impl Expression for Variable {
         None
     }
 
-    fn evaluate<'a>(
-        &self,
-        _functions: &Functions,
-        context: &mut Context,
-        _record: &'a Record,
-    ) -> Value {
+    fn evaluate(&self, _functions: &Functions, context: &mut MutableContext) -> Value {
         context.fetch_variable(&self.variable_name)
     }
 }
 
 impl Assign for Variable {
-    fn assign<'a>(&self, context: &mut Context, _record: &'a Record, value: Value) {
+    fn assign<'a>(&self, context: &mut MutableContext, value: Value) {
         context.assign_variable(&self.variable_name, value);
     }
 }
@@ -65,32 +60,36 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use crate::value::NumericValue;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+        let variables = Variables::empty();
+        let record = variables.record_for_line("");
         (
             HashMap::new(),
-            Context::empty(),
-            Record {
-                full_line: "",
-                fields: vec![],
-            },
+            variables,
+            record,
         )
     }
 
     #[test]
     fn variables_can_evaluate() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
         let value = Value::Numeric(NumericValue::Integer(1));
-        context.assign_variable("foo", value.clone());
+        variables.assign_variable("foo", value.clone());
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
 
         assert_eq!(
             Variable {
                 variable_name: "foo".to_string()
             }
-            .evaluate(&functions, &mut context, &record),
+            .evaluate(&functions, &mut context),
             value,
         );
     }

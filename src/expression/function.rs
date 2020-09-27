@@ -9,11 +9,7 @@ use nom::{
 };
 
 use super::{parse_expression, variable::parse_variable_name, Expression, ExpressionParseResult};
-use crate::{
-    basic_types::{Context, Record},
-    function::Functions,
-    value::Value,
-};
+use crate::{basic_types::MutableContext, function::Functions, value::Value};
 
 #[derive(Debug)]
 struct FunctionCall {
@@ -22,12 +18,7 @@ struct FunctionCall {
 }
 
 impl Expression for FunctionCall {
-    fn evaluate<'a>(
-        &self,
-        functions: &Functions,
-        context: &mut Context,
-        record: &'a Record,
-    ) -> Value {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
         let function = match functions.get(&self.name) {
             Some(func) => func,
             None => panic!("Could not find function with name {}", self.name),
@@ -35,11 +26,11 @@ impl Expression for FunctionCall {
         let values: Vec<Value> = self
             .arguments
             .iter()
-            .map(|exp| exp.evaluate(functions, context, record))
+            .map(|exp| exp.evaluate(functions, context))
             .collect();
 
         // TODO: Capture this output
-        function.invoke_with(values, functions, context, record);
+        function.invoke_with(values, functions, context);
 
         // TODO: Actually return a proper return value
         Value::String("".to_string())
@@ -93,7 +84,7 @@ mod tests {
         // Assert no panic
         let result = parse_function_call(r#"foo("first", a, 1 + 2, $0)"#);
         assert!(result.is_ok());
-        let (remaining, call) = result.unwrap();
+        let (remaining, _call) = result.unwrap();
         assert_eq!(remaining, "");
     }
 }

@@ -11,7 +11,7 @@ use std::ops::Index;
 
 use crate::{
     action::{parse_action, Action},
-    basic_types::{Context, Record, UNINITIALIZED_VALUE},
+    basic_types::{MutableContext, UNINITIALIZED_VALUE},
     expression::variable::parse_variable_name,
     value::Value,
 };
@@ -49,8 +49,7 @@ impl FunctionDefinition {
         &self,
         values: Vec<Value>,
         functions: &Functions,
-        context: &mut Context,
-        record: &Record,
+        context: &mut MutableContext,
     ) -> Vec<String> {
         let (num, expected_num) = (values.len(), self.variable_names.len());
         if num > expected_num {
@@ -73,7 +72,16 @@ impl FunctionDefinition {
         // Right now, a function can only be invoked as a Statement with printable outputs.
         // In the future, a function will need to be both a "statement" (returning outputs) AND an
         // expression (having a nestable value)
-        context.with_stack_frame(frame, |c| self.body.output_for_line(functions, c, record))
+        let record = context.record;
+        context.variables.with_stack_frame(frame, |v| {
+            self.body.output_for_line(
+                functions,
+                &mut MutableContext {
+                    variables: v,
+                    record: record,
+                },
+            )
+        })
     }
 }
 

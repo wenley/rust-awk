@@ -10,7 +10,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::MutableContext,
     function::Functions,
     value::{NumericValue, Value},
 };
@@ -37,14 +37,9 @@ impl Expression for BinaryComparison {
         None
     }
 
-    fn evaluate<'a>(
-        &self,
-        functions: &Functions,
-        context: &mut Context,
-        record: &'a Record,
-    ) -> Value {
-        let left_value = self.left.evaluate(functions, context, record);
-        let right_value = self.right.evaluate(functions, context, record);
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
+        let left_value = self.left.evaluate(functions, context);
+        let right_value = self.right.evaluate(functions, context);
 
         let result = if let (Value::Numeric(left_number), Value::Numeric(right_number)) =
             (&left_value, &right_value)
@@ -140,95 +135,89 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
+    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+        let variables = Variables::empty();
+        let record = variables.record_for_line("");
         (
             HashMap::new(),
-            Context::empty(),
-            Record {
-                full_line: "",
-                fields: vec![],
-            },
+            variables,
+            record,
         )
     }
 
     #[test]
     fn test_comparing_numbers() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
         let parser = comparison_parser(parse_literal);
 
         let result = parser("1 < 2");
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser("1 > 2");
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
 
     #[test]
     fn test_comparing_strings() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
         let parser = comparison_parser(parse_literal);
 
         let result = parser(r#""a" < "b""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""A" <= "a""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
 
     #[test]
     fn test_comparing_numbers_and_strings() {
-        let (functions, mut context, record) = empty_context_and_record();
+        let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: Some(&record),
+        };
         let parser = comparison_parser(parse_literal);
 
         // Numbers come before letters
         let result = parser(r#""a" < 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#""1" == 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut context, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }

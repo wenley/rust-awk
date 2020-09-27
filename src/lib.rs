@@ -21,7 +21,7 @@ mod pattern;
 mod value;
 
 use crate::{
-    basic_types::{Context, Record},
+    basic_types::{MutableContext, VariableStore, Variables},
     function::{parse_function, FunctionDefinition, Functions},
     item::{parse_item, Item},
 };
@@ -82,7 +82,7 @@ pub fn parse_program(program_text: &str) -> Program {
 
 pub struct ProgramRun {
     program: Program,
-    context: Context,
+    variables: Variables,
 }
 
 pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
@@ -91,7 +91,7 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
 
     let mut run = ProgramRun {
         program: program,
-        context: Context::empty(),
+        variables: Variables::empty(),
     };
 
     run.apply_args(&parsed_args);
@@ -101,42 +101,38 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
 
 impl ProgramRun {
     pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
-        let record = Record {
-            full_line: line,
-            fields: self.split(line),
-        };
-        // Need explicit borrow of the context to avoid borrowing `self` later
-        let context = &mut self.context;
+        let mut record = self.variables.record_for_line(line);
+        // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
+        let mut context = MutableContext {
+            variables: &mut self.variables,
+            record: Some(&mut record),
+        };
 
         self.program
             .items
             .iter()
-            .flat_map(|item: &item::Item| item.output_for_line(functions, context, &record))
+            .flat_map(|item: &item::Item| item.output_for_line(functions, &mut context))
             .collect()
     }
 
     pub fn output_for_begin_items(&mut self) -> Vec<String> {
-        let context = &mut self.context;
+        let variables = &mut self.variables;
         let functions = &self.program.functions;
 
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_begin(functions, context))
+            .flat_map(|item| item.output_for_begin(functions, variables))
             .collect()
     }
 
     pub fn apply_args(&mut self, args: &parse_args::Args) {
-        self.context.set_field_separator(&args.field_separator);
+        self.variables.set_field_separator(&args.field_separator);
         for (name, value) in args.variables.iter() {
-            self.context
+            self.variables
                 .assign_variable(name, value::Value::String(value.to_string()));
         }
-    }
-
-    fn split<'a>(&self, line: &'a str) -> Vec<&'a str> {
-        self.context.split(line)
     }
 }
 
