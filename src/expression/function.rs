@@ -9,11 +9,7 @@ use nom::{
 };
 
 use super::{parse_expression, variable::parse_variable_name, Expression, ExpressionParseResult};
-use crate::{
-    basic_types::{MutableContext, Record, Variables},
-    function::Functions,
-    value::Value,
-};
+use crate::{basic_types::MutableContext, function::Functions, value::Value};
 
 #[derive(Debug)]
 struct FunctionCall {
@@ -22,12 +18,7 @@ struct FunctionCall {
 }
 
 impl Expression for FunctionCall {
-    fn evaluate<'a>(
-        &self,
-        functions: &Functions,
-        variables: &mut Variables,
-        record: &'a Record,
-    ) -> Value {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
         let function = match functions.get(&self.name) {
             Some(func) => func,
             None => panic!("Could not find function with name {}", self.name),
@@ -35,15 +26,11 @@ impl Expression for FunctionCall {
         let values: Vec<Value> = self
             .arguments
             .iter()
-            .map(|exp| exp.evaluate(functions, variables, record))
+            .map(|exp| exp.evaluate(functions, context))
             .collect();
-        let mut context = MutableContext {
-            variables: variables,
-            record: record,
-        };
 
         // TODO: Capture this output
-        function.invoke_with(values, functions, &mut context);
+        function.invoke_with(values, functions, context);
 
         // TODO: Actually return a proper return value
         Value::String("".to_string())

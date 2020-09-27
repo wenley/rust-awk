@@ -4,7 +4,7 @@ use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Record, Variables},
+    basic_types::{MutableContext, Record, Variables},
     function::Functions,
     value::Value,
 };
@@ -19,13 +19,8 @@ impl Expression for Variable {
         None
     }
 
-    fn evaluate<'a>(
-        &self,
-        _functions: &Functions,
-        variables: &mut Variables,
-        _record: &'a Record,
-    ) -> Value {
-        variables.fetch_variable(&self.variable_name)
+    fn evaluate(&self, _functions: &Functions, context: &mut MutableContext) -> Value {
+        context.variables.fetch_variable(&self.variable_name)
     }
 }
 
@@ -85,12 +80,16 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let value = Value::Numeric(NumericValue::Integer(1));
         variables.assign_variable("foo", value.clone());
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: &record,
+        };
 
         assert_eq!(
             Variable {
                 variable_name: "foo".to_string()
             }
-            .evaluate(&functions, &mut variables, &record),
+            .evaluate(&functions, &mut context),
             value,
         );
     }

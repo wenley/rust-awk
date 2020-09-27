@@ -10,7 +10,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{Record, Variables},
+    basic_types::MutableContext,
     function::Functions,
     value::{NumericValue, Value},
 };
@@ -33,19 +33,11 @@ impl Expression for BinaryBoolean {
         None
     }
 
-    fn evaluate<'a>(
-        &self,
-        functions: &Functions,
-        variables: &mut Variables,
-        record: &'a Record,
-    ) -> Value {
-        let left_value = self
-            .left
-            .evaluate(functions, variables, record)
-            .coercion_to_boolean();
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
+        let left_value = self.left.evaluate(functions, context).coercion_to_boolean();
         let right_value = self
             .right
-            .evaluate(functions, variables, record)
+            .evaluate(functions, context)
             .coercion_to_boolean();
 
         let result = match &self.operator {
@@ -67,15 +59,10 @@ impl Expression for NotBoolean {
         None
     }
 
-    fn evaluate<'a>(
-        &self,
-        functions: &Functions,
-        variables: &mut Variables,
-        record: &'a Record,
-    ) -> Value {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
         let value = self
             .expression
-            .evaluate(functions, variables, record)
+            .evaluate(functions, context)
             .coercion_to_boolean();
         let int_value = if value { 0 } else { 1 };
         Value::Numeric(NumericValue::Integer(int_value))
@@ -161,6 +148,7 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
+    use crate::basic_types::{Record, Variables};
     use crate::function::Functions;
     use std::collections::HashMap;
 
@@ -178,35 +166,30 @@ mod tests {
     #[test]
     fn test_and_parsing() {
         let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: &record,
+        };
         let parser = and_parser(parse_literal);
 
         let result = parser(r#""a" && 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""a" && 0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#""" && 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
@@ -214,45 +197,37 @@ mod tests {
     #[test]
     fn test_or_parsing() {
         let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: &record,
+        };
         let parser = or_parser(parse_literal);
 
         let result = parser(r#""a" || 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""a" || 0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""" || 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""" || 0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
@@ -260,55 +235,44 @@ mod tests {
     #[test]
     fn test_not_parsing() {
         let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: &record,
+        };
         let parser = not_parser(parse_literal);
 
         let result = parser(r#"!1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#"!0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#"!"a""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#"!"""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#"!!!!!0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
@@ -316,25 +280,23 @@ mod tests {
     #[test]
     fn test_iteration_compression() {
         let (functions, mut variables, record) = empty_variables_and_record();
+        let mut context = MutableContext {
+            variables: &mut variables,
+            record: &record,
+        };
         let parser = not_parser(parse_literal);
 
         let result = parser(r#""abc""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::String("abc".to_string()),
         );
 
         let result = parser(r#"!!"abc""#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .evaluate(&functions, &mut variables, &record),
+            result.unwrap().1.evaluate(&functions, &mut context),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
