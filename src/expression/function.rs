@@ -22,7 +22,12 @@ struct FunctionCall {
 }
 
 impl Expression for FunctionCall {
-    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value {
+    fn evaluate<'a>(
+        &self,
+        functions: &Functions,
+        context: &mut Context,
+        record: &'a Record,
+    ) -> Value {
         // TODO: Actually return a proper return value
         Value::String("".to_string())
     }

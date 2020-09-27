@@ -33,7 +33,12 @@ impl Expression for BinaryBoolean {
         None
     }
 
-    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value {
+    fn evaluate<'a>(
+        &self,
+        functions: &Functions,
+        context: &mut Context,
+        record: &'a Record,
+    ) -> Value {
         let left_value = self
             .left
             .evaluate(functions, context, record)
@@ -62,7 +67,12 @@ impl Expression for NotBoolean {
         None
     }
 
-    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value {
+    fn evaluate<'a>(
+        &self,
+        functions: &Functions,
+        context: &mut Context,
+        record: &'a Record,
+    ) -> Value {
         let value = self
             .expression
             .evaluate(functions, context, record)

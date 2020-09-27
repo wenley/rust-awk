@@ -27,7 +27,12 @@ pub(crate) mod variable;
 pub(crate) use variable::parse_variable_name;
 
 pub(crate) trait Expression: Debug {
-    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value;
+    fn evaluate<'a>(
+        &self,
+        functions: &Functions,
+        context: &mut Context,
+        record: &'a Record,
+    ) -> Value;
 
     fn regex<'a>(&'a self) -> Option<&'a Regex>;
 }

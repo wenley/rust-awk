@@ -34,7 +34,7 @@ impl Expression for Literal {
     fn evaluate<'a>(
         &self,
         _functions: &Functions,
-        _context: &Context,
+        _context: &mut Context,
         _record: &'a Record,
     ) -> Value {
         match self {

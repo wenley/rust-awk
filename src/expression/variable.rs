@@ -22,7 +22,7 @@ impl Expression for Variable {
     fn evaluate<'a>(
         &self,
         _functions: &Functions,
-        context: &Context,
+        context: &mut Context,
         _record: &'a Record,
     ) -> Value {
         context.fetch_variable(&self.variable_name)
