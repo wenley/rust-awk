@@ -42,10 +42,13 @@ pub(crate) struct FunctionDefinition {
     body: Action,
 }
 
+pub(crate) type Functions = HashMap<String, FunctionDefinition>;
+
 impl FunctionDefinition {
     pub(crate) fn invoke_with(
         &self,
         values: Vec<Value>,
+        functions: &Functions,
         context: &mut Context,
         record: &Record,
     ) -> Vec<String> {
@@ -70,7 +73,7 @@ impl FunctionDefinition {
         // Right now, a function can only be invoked as a Statement with printable outputs.
         // In the future, a function will need to be both a "statement" (returning outputs) AND an
         // expression (having a nestable value)
-        context.with_stack_frame(frame, |c| self.body.output_for_line(c, record))
+        context.with_stack_frame(frame, |c| self.body.output_for_line(functions, c, record))
     }
 }
 

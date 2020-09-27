@@ -1,6 +1,8 @@
 extern crate nom;
 extern crate regex;
 
+use std::collections::HashMap;
+
 mod action;
 mod basic_types;
 mod expression;
@@ -12,16 +14,21 @@ mod value;
 
 use crate::{
     basic_types::{Context, Record},
+    function::Functions,
     item::{parse_item_list, Item},
 };
 
 pub struct Program {
     items: Vec<Item>,
+    functions: Functions,
 }
 
 pub fn parse_program(program_text: &str) -> Program {
     match parse_item_list(program_text) {
-        Ok((_, items)) => Program { items: items },
+        Ok((_, items)) => Program {
+            items: items,
+            functions: HashMap::new(),
+        },
         Err(e) => panic!("Could not parse! {}", e),
     }
 }
@@ -53,20 +60,23 @@ impl ProgramRun {
         };
         // Need explicit borrow of the context to avoid borrowing `self` later
         let context = &mut self.context;
+        let functions = &self.program.functions;
 
         self.program
             .items
             .iter()
-            .flat_map(|item: &item::Item| item.output_for_line(context, &record))
+            .flat_map(|item: &item::Item| item.output_for_line(functions, context, &record))
             .collect()
     }
 
     pub fn output_for_begin_items(&mut self) -> Vec<String> {
         let context = &mut self.context;
+        let functions = &self.program.functions;
+
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_begin(context))
+            .flat_map(|item| item.output_for_begin(functions, context))
             .collect()
     }
 
