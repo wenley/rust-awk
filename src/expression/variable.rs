@@ -16,15 +16,13 @@ impl Expression for Variable {
     }
 
     fn evaluate(&self, _functions: &Functions, context: &mut MutableContext) -> Value {
-        context.variables.fetch_variable(&self.variable_name)
+        context.fetch_variable(&self.variable_name)
     }
 }
 
 impl Assign for Variable {
     fn assign<'a>(&self, context: &mut MutableContext, value: Value) {
-        context
-            .variables
-            .assign_variable(&self.variable_name, value);
+        context.assign_variable(&self.variable_name, value);
     }
 }
 

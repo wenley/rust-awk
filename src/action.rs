@@ -331,7 +331,7 @@ mod tests {
         .1;
         assign_action.output_for_line(&functions, &mut context);
         assert_eq!(
-            variables.fetch_variable("foo"),
+            context.fetch_variable("foo"),
             Value::Numeric(NumericValue::Integer(3)),
         );
     }

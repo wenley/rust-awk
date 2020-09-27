@@ -15,7 +15,6 @@ enum FieldSeparator {
     Regex(regex::Regex),
 }
 
-// TODO: Rename this to VariableValues or something
 pub(crate) struct Variables {
     field_separator: FieldSeparator,
     global_variables: StackFrame,
@@ -27,6 +26,16 @@ pub(crate) struct MutableContext<'a> {
     pub(crate) record: &'a Record<'a>,
 }
 
+impl MutableContext<'_> {
+    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
+        self.variables.fetch_variable(variable_name)
+    }
+
+    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
+        self.variables.assign_variable(variable_name, value);
+    }
+}
+
 impl Variables {
     pub(crate) fn empty() -> Variables {
         Variables {
@@ -36,7 +45,7 @@ impl Variables {
         }
     }
 
-    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Value {
+    fn fetch_variable(&self, variable_name: &str) -> Value {
         let last_frame = self.function_variables.last();
 
         last_frame
