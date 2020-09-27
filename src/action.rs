@@ -11,6 +11,7 @@ use nom::{
 use crate::{
     basic_types::{Context, Record},
     expression::{parse_assignable, parse_expression, Assign, Expression},
+    function::Functions,
 };
 
 #[derive(Debug)]
@@ -21,12 +22,13 @@ pub(crate) struct Action {
 impl Action {
     pub(crate) fn output_for_line<'a>(
         &self,
+        functions: &Functions,
         context: &mut Context,
         record: &Record<'a>,
     ) -> Vec<String> {
         self.statements
             .iter()
-            .flat_map(|statement| statement.evaluate(context, record))
+            .flat_map(|statement| statement.evaluate(functions, context, record))
             .collect()
     }
 }
@@ -67,12 +69,17 @@ enum Statement {
 }
 
 impl Statement {
-    fn evaluate<'a>(&self, context: &mut Context, record: &'a Record) -> Vec<String> {
+    fn evaluate<'a>(
+        &self,
+        functions: &Functions,
+        context: &mut Context,
+        record: &'a Record,
+    ) -> Vec<String> {
         match self {
             Statement::Print(expressions) => {
                 let output_line = expressions
                     .iter()
-                    .map(|e| e.evaluate(context, record).coerce_to_string())
+                    .map(|e| e.evaluate(functions, context, record).coerce_to_string())
                     .collect::<Vec<String>>()
                     .join(" ");
                 vec![output_line]
@@ -82,25 +89,28 @@ impl Statement {
                 if_branch,
                 else_branch,
             } => {
-                let result = condition.evaluate(context, record).coercion_to_boolean();
+                let result = condition
+                    .evaluate(functions, context, record)
+                    .coercion_to_boolean();
                 if result {
-                    if_branch.output_for_line(context, record)
+                    if_branch.output_for_line(functions, context, record)
                 } else {
-                    else_branch.output_for_line(context, record)
+                    else_branch.output_for_line(functions, context, record)
                 }
             }
             Statement::Assign { assignable, value } => {
-                let value = value.evaluate(context, record);
+                // TODO: Check for function / variable name collision
+                let value = value.evaluate(functions, context, record);
                 assignable.assign(context, record, value);
                 vec![]
             }
             Statement::While { condition, body } => {
-                let mut value = condition.evaluate(context, record);
+                let mut value = condition.evaluate(functions, context, record);
                 let mut output = vec![];
                 loop {
                     if value.coercion_to_boolean() {
-                        output.append(&mut body.output_for_line(context, record));
-                        value = condition.evaluate(context, record);
+                        output.append(&mut body.output_for_line(functions, context, record));
+                        value = condition.evaluate(functions, context, record);
                     } else {
                         break;
                     }
@@ -110,8 +120,8 @@ impl Statement {
             Statement::DoWhile { body, condition } => {
                 let mut output = vec![];
                 loop {
-                    output.append(&mut body.output_for_line(context, record));
-                    let value = condition.evaluate(context, record);
+                    output.append(&mut body.output_for_line(functions, context, record));
+                    let value = condition.evaluate(functions, context, record);
                     if !value.coercion_to_boolean() {
                         break;
                     }
@@ -241,10 +251,13 @@ fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::function::Functions;
     use crate::value::{NumericValue, Value};
+    use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Context, Record<'static>) {
+    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
         (
+            HashMap::new(),
             Context::empty(),
             Record {
                 full_line: "",
@@ -255,17 +268,17 @@ mod tests {
 
     #[test]
     fn print_statement_produces_value() {
-        let (mut empty_context, record) = empty_context_and_record();
+        let (functions, mut empty_context, record) = empty_context_and_record();
         let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
-            print_action.output_for_line(&mut empty_context, &record),
+            print_action.output_for_line(&functions, &mut empty_context, &record),
             vec!["hello"],
         );
     }
 
     #[test]
     fn if_produces_correct_value() {
-        let (mut empty_context, record) = empty_context_and_record();
+        let (functions, mut empty_context, record) = empty_context_and_record();
 
         let if_conditional = parse_action(
             r#"{
@@ -279,7 +292,7 @@ mod tests {
         .unwrap()
         .1;
         assert_eq!(
-            if_conditional.output_for_line(&mut empty_context, &record),
+            if_conditional.output_for_line(&functions, &mut empty_context, &record),
             vec!["if-branch"],
         );
 
@@ -295,14 +308,14 @@ mod tests {
         .unwrap()
         .1;
         assert_eq!(
-            else_conditional.output_for_line(&mut empty_context, &record),
+            else_conditional.output_for_line(&functions, &mut empty_context, &record),
             vec!["else"],
         );
     }
 
     #[test]
     fn assignment_updates_context() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
 
         let assign_action = parse_action(
             r#"{
@@ -311,7 +324,7 @@ mod tests {
         )
         .unwrap()
         .1;
-        assign_action.output_for_line(&mut context, &record);
+        assign_action.output_for_line(&functions, &mut context, &record);
         assert_eq!(
             context.fetch_variable("foo"),
             Value::Numeric(NumericValue::Integer(3)),
@@ -320,14 +333,14 @@ mod tests {
 
     #[test]
     fn test_parse_statements() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let result = parse_print_statement(r#"print("hello")"#);
         assert!(result.is_ok());
         assert_eq!(
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&mut context, &record),
+            .output_for_line(&functions, &mut context, &record),
             vec!["hello"],
         );
 
@@ -342,14 +355,14 @@ mod tests {
             Action {
                 statements: result.unwrap().1
             }
-            .output_for_line(&mut context, &record),
+            .output_for_line(&functions, &mut context, &record),
             vec!["1", "2 extra arg", "hello",],
         );
     }
 
     #[test]
     fn test_parse_if_else_statement() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(
             r#"if (1) {
             print("hello");
@@ -360,14 +373,14 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&mut context, &record),
+            .output_for_line(&functions, &mut context, &record),
             vec!["hello"],
         );
     }
 
     #[test]
     fn test_parse_while_statement() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(
             r#"while (0) {
                 print("hello");
@@ -379,14 +392,14 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&mut context, &record),
+            .output_for_line(&functions, &mut context, &record),
             empty_vec,
         );
     }
 
     #[test]
     fn test_parse_do_while_statement() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(
             r#"do {
                 print("hello");
@@ -397,13 +410,13 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&mut context, &record),
+            .output_for_line(&functions, &mut context, &record),
             vec!["hello"],
         );
     }
     #[test]
     fn test_parse_assign_statement() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let result = parse_simple_statement(r#"variable = "hi""#);
         let empty_vec: Vec<&'static str> = vec![];
         assert!(result.is_ok());
@@ -411,8 +424,17 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&mut context, &record),
+            .output_for_line(&functions, &mut context, &record),
             empty_vec,
         );
+    }
+
+    #[test]
+    fn test_assign_from_function() {
+        let (functions, mut context, record) = empty_context_and_record();
+        let result = parse_simple_statement(r#"variable = hello("hi")"#);
+        assert!(result.is_ok());
+        let (remaining, statement) = result.unwrap();
+        assert_eq!(remaining, "");
     }
 }
