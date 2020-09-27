@@ -62,20 +62,19 @@ mod tests {
     use std::collections::HashMap;
 
     fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+        let variables = Variables::empty();
+        let record = variables.record_for_line("");
         (
             HashMap::new(),
-            Variables::empty(),
-            Record {
-                full_line: "",
-                fields: vec![],
-            },
+            variables,
+            record,
         )
     }
 
     #[test]
     fn field_reference_can_evaluate() {
-        let (functions, mut variables, mut record) = empty_variables_and_record();
-        record.fields = vec!["first", "second"];
+        let (functions, mut variables, _) = empty_variables_and_record();
+        let record = variables.record_for_line("first second");
         let mut context = MutableContext {
             variables: &mut variables,
             record: Some(&record),
@@ -107,7 +106,7 @@ mod tests {
             Value::Uninitialized,
         );
 
-        record.fields = vec!["hello"];
+        record = variables.record_for_line("hello");
         context = MutableContext {
             variables: &mut variables,
             record: Some(&record),

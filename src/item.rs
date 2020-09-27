@@ -2,7 +2,7 @@ use nom::{character::complete::multispace0, combinator::map, sequence::tuple, IR
 
 use crate::{
     action::{parse_action, Action},
-    basic_types::{MutableContext, Record, Variables},
+    basic_types::{MutableContext, Variables},
     function::Functions,
     pattern::{parse_item_pattern, Pattern},
 };
@@ -31,13 +31,10 @@ impl Item {
         variables: &mut Variables,
     ) -> Vec<String> {
         if let Pattern::Begin = self.pattern {
-            let empty_record = Record {
-                full_line: "",
-                fields: vec![],
-            };
+            let record = variables.record_for_line("");
             let mut context = MutableContext {
                 variables: variables,
-                record: Some(&empty_record),
+                record: Some(&record),
             };
             self.action.output_for_line(functions, &mut context)
         } else {
@@ -60,26 +57,23 @@ pub(crate) fn parse_item(input: &str) -> IResult<&str, Item> {
 mod tests {
     use super::*;
     use crate::function::Functions;
+    use crate::basic_types::Record;
     use std::collections::HashMap;
 
     fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+        let variables = Variables::empty();
+        let record = variables.record_for_line("");
         (
             HashMap::new(),
-            Variables::empty(),
-            Record {
-                full_line: "",
-                fields: vec![],
-            },
+            variables,
+            record,
         )
     }
 
     #[test]
     fn test_full_item_parsing() {
         let (functions, mut variables, _) = empty_variables_and_record();
-        let record = Record {
-            full_line: "hello world today",
-            fields: vec!["hello", "world", "today"],
-        };
+        let record = variables.record_for_line("hello world today");
         let mut context = MutableContext {
             variables: &mut variables,
             record: Some(&record),

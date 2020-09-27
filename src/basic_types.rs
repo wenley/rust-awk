@@ -4,8 +4,8 @@ use regex;
 use crate::function::StackFrame;
 
 pub(crate) struct Record<'a> {
-    pub(crate) full_line: &'a str,
-    pub(crate) fields: Vec<&'a str>,
+    full_line: &'a str,
+    fields: Vec<&'a str>,
 }
 
 pub(crate) static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
