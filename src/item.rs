@@ -18,8 +18,9 @@ impl Item {
         functions: &Functions,
         context: &mut MutableContext<'a>,
     ) -> Vec<String> {
-        if self.pattern.matches(functions, context.variables, context.record) {
-            self.action.output_for_line(functions, context.variables, context.record)
+        if self.pattern.matches(functions, context) {
+            self.action
+                .output_for_line(functions, context.variables, context.record)
         } else {
             vec![]
         }
@@ -86,30 +87,21 @@ mod tests {
         let result = parse_item(r#"$1 ~ "hello" { print($0); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .output_for_line(&functions, &mut context),
+            result.unwrap().1.output_for_line(&functions, &mut context),
             vec!["hello world today"],
         );
 
         let result = parse_item(r#"$2 ~ "hello" { print($0); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .output_for_line(&functions, &mut context),
+            result.unwrap().1.output_for_line(&functions, &mut context),
             empty_string_vec,
         );
 
         let result = parse_item(r#"11 ~ 1 { print($3); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            result
-                .unwrap()
-                .1
-                .output_for_line(&functions, &mut context),
+            result.unwrap().1.output_for_line(&functions, &mut context),
             vec!["today"],
         );
     }

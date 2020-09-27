@@ -6,7 +6,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::{Record, Variables},
+    basic_types::MutableContext,
     expression::{parse_expression, Expression},
     function::Functions,
 };
@@ -19,18 +19,13 @@ pub(crate) enum Pattern {
 }
 
 impl Pattern {
-    pub(crate) fn matches<'a>(
-        &self,
-        functions: &Functions,
-        variables: &mut Variables,
-        record: &Record<'a>,
-    ) -> bool {
+    pub(crate) fn matches(&self, functions: &Functions, context: &mut MutableContext) -> bool {
         match self {
             Pattern::MatchEverything => true,
             Pattern::Expression(expression) => match expression.regex() {
-                Some(regex) => regex.is_match(record.full_line),
+                Some(regex) => regex.is_match(context.record.full_line),
                 None => expression
-                    .evaluate(functions, variables, record)
+                    .evaluate(functions, context.variables, context.record)
                     .coercion_to_boolean(),
             },
             Pattern::Begin => false,
