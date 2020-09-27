@@ -71,6 +71,7 @@ fn parse_primary(input: &str) -> ExpressionParseResult {
     alt((
         literal::parse_literal,
         variable::parse_variable,
+        function::parse_function_call,
         parse_parens,
     ))(input)
 }
