@@ -2,8 +2,12 @@ extern crate nom;
 extern crate regex;
 
 use nom::{
-    branch::alt, character::complete::multispace0, combinator::map, multi::many1,
-    sequence::delimited, IResult,
+    branch::alt,
+    character::complete::multispace0,
+    combinator::{all_consuming, map},
+    multi::many1,
+    sequence::delimited,
+    IResult,
 };
 use std::collections::HashMap;
 
@@ -61,7 +65,7 @@ fn parse_item_list(input: &str) -> IResult<&str, (Vec<Item>, Vec<FunctionDefinit
 }
 
 pub fn parse_program(program_text: &str) -> Program {
-    match parse_item_list(program_text) {
+    match all_consuming(parse_item_list)(program_text) {
         Ok((_, (items, functions))) => {
             let mut function_map = HashMap::new();
             for func in functions {
@@ -154,7 +158,7 @@ mod tests {
     #[test]
     fn test_parse_program_with_function() {
         // Assert no panic
-        parse_program(
+        let program = parse_program(
             r#"{ print(1);
             print(2.0);
             print("hello");
@@ -164,5 +168,23 @@ mod tests {
         }
         "#,
         );
+        assert_eq!(program.items.len(), 1);
+        assert_eq!(program.functions.len(), 1);
+    }
+
+    #[test]
+    fn test_bad_program() {
+        // Assert no panic
+        let program = parse_program(
+            r#"function store(val) {
+  a = val;
+}
+{
+  print($0, a);
+  b = store($0);
+}"#,
+        );
+        assert_eq!(program.items.len(), 1);
+        assert_eq!(program.functions.len(), 1);
     }
 }

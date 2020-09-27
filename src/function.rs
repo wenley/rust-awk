@@ -125,7 +125,8 @@ mod tests {
             }"#,
         );
         assert!(result.is_ok());
-        let function_definition = result.unwrap().1;
+        let (remaining, function_definition) = result.unwrap();
+        assert_eq!(remaining, "");
         assert_eq!(function_definition.name, "foo");
         assert_eq!(function_definition.variable_names, vec!["a"]);
     }

@@ -91,6 +91,9 @@ mod tests {
     #[test]
     fn test_function_parsing() {
         // Assert no panic
-        parse_function_call(r#"foo("first", a, 1 + 2)"#);
+        let result = parse_function_call(r#"foo("first", a, 1 + 2, $0)"#);
+        assert!(result.is_ok());
+        let (remaining, call) = result.unwrap();
+        assert_eq!(remaining, "");
     }
 }

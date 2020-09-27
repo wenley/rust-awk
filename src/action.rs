@@ -428,4 +428,13 @@ mod tests {
             empty_vec,
         );
     }
+
+    #[test]
+    fn test_assign_from_function() {
+        let (functions, mut context, record) = empty_context_and_record();
+        let result = parse_simple_statement(r#"variable = hello("hi")"#);
+        assert!(result.is_ok());
+        let (remaining, statement) = result.unwrap();
+        assert_eq!(remaining, "");
+    }
 }

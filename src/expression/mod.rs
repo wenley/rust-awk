@@ -69,9 +69,9 @@ pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
 
 fn parse_primary(input: &str) -> ExpressionParseResult {
     alt((
+        function::parse_function_call,
         literal::parse_literal,
         variable::parse_variable,
-        function::parse_function_call,
         parse_parens,
     ))(input)
 }

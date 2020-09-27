@@ -1,7 +1,7 @@
 use crate::value::Value;
 use regex;
 
-use crate::function::{StackFrame};
+use crate::function::StackFrame;
 
 pub(crate) struct Record<'a> {
     pub(crate) full_line: &'a str,
