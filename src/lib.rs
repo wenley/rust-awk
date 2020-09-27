@@ -2,6 +2,12 @@ extern crate nom;
 extern crate regex;
 
 use std::collections::HashMap;
+use nom::{
+    character::complete::multispace0,
+    multi::many1,
+    sequence::delimited,
+    IResult,
+};
 
 mod action;
 mod basic_types;
@@ -15,12 +21,16 @@ mod value;
 use crate::{
     basic_types::{Context, Record},
     function::Functions,
-    item::{parse_item_list, Item},
+    item::{parse_item, Item},
 };
 
 pub struct Program {
     items: Vec<Item>,
     functions: Functions,
+}
+
+fn parse_item_list(input: &str) -> IResult<&str, Vec<Item>> {
+    many1(delimited(multispace0, parse_item, multispace0))(input)
 }
 
 pub fn parse_program(program_text: &str) -> Program {

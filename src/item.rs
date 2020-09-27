@@ -1,8 +1,7 @@
 use nom::{
     character::complete::multispace0,
     combinator::map,
-    multi::many1,
-    sequence::{delimited, tuple},
+    sequence::tuple,
     IResult,
 };
 
@@ -50,11 +49,7 @@ impl Item {
     }
 }
 
-pub(crate) fn parse_item_list(input: &str) -> IResult<&str, Vec<Item>> {
-    many1(delimited(multispace0, parse_item, multispace0))(input)
-}
-
-fn parse_item(input: &str) -> IResult<&str, Item> {
+pub(crate) fn parse_item(input: &str) -> IResult<&str, Item> {
     map(
         tuple((parse_item_pattern, multispace0, parse_action)),
         |(pattern, _, action)| Item {
