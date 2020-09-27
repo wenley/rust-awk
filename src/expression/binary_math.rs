@@ -10,6 +10,7 @@ use nom::{
 use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::{Context, Record},
+    function::Functions,
     value::{NumericValue, Value},
 };
 
@@ -35,9 +36,15 @@ impl Expression for BinaryMath {
         None
     }
 
-    fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
-        let left_value = self.left.evaluate(context, record).coerce_to_numeric();
-        let right_value = self.right.evaluate(context, record).coerce_to_numeric();
+    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value {
+        let left_value = self
+            .left
+            .evaluate(functions, context, record)
+            .coerce_to_numeric();
+        let right_value = self
+            .right
+            .evaluate(functions, context, record)
+            .coerce_to_numeric();
 
         match (&self.operator, left_value, right_value) {
             (Operator::Add, NumericValue::Integer(x), NumericValue::Integer(y)) => {
@@ -179,9 +186,12 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
+    use crate::function::Functions;
+    use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Context, Record<'static>) {
+    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
         (
+            HashMap::new(),
             Context::empty(),
             Record {
                 full_line: "",
@@ -192,41 +202,50 @@ mod tests {
 
     #[test]
     fn binary_expressions_can_evaluate() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         assert_eq!(
             BinaryMath {
                 left: Box::new(Literal::Numeric(NumericValue::Integer(2))),
                 operator: Operator::Add,
                 right: Box::new(Literal::Numeric(NumericValue::Integer(3))),
             }
-            .evaluate(&context, &record),
+            .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(5)),
         );
     }
 
     #[test]
     fn binary_expressions_can_parse() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let parser = addition_parser(multiplication_parser(parse_literal));
 
         let result = parser("1 + 2 - 3 + 4 - 5.5");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Float(-1.5)),
         );
 
         let result = parser("1 * 2 + 3 * 4");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(14)),
         );
 
         let result = parser("6 / 5 * 4 / 3");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             // Floating point error!
             Value::Numeric(NumericValue::Float(1.5999999999999999)),
         );
@@ -234,14 +253,20 @@ mod tests {
         let result = parser("6 / 3");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(2)),
         );
 
         let result = parser("6 % 5 * 4 / 3 % 2");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Float(1.3333333333333333)),
         );
     }

@@ -25,7 +25,7 @@ impl Item {
         context: &mut Context,
         record: &Record<'a>,
     ) -> Vec<String> {
-        if self.pattern.matches(context, record) {
+        if self.pattern.matches(functions, context, record) {
             self.action.output_for_line(functions, context, record)
         } else {
             vec![]

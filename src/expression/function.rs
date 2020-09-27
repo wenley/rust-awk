@@ -11,6 +11,7 @@ use nom::{
 use super::{parse_expression, variable::parse_variable_name, Expression, ExpressionParseResult};
 use crate::{
     basic_types::{Context, Record},
+    function::Functions,
     value::Value,
 };
 
@@ -21,7 +22,7 @@ struct FunctionCall {
 }
 
 impl Expression for FunctionCall {
-    fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
+    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value {
         // TODO: Actually return a proper return value
         Value::String("".to_string())
     }

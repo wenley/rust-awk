@@ -11,6 +11,7 @@ use nom::{
 use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::{Context, Record},
+    function::Functions,
     value::{NumericValue, Value},
 };
 
@@ -36,9 +37,9 @@ impl Expression for BinaryComparison {
         None
     }
 
-    fn evaluate<'a>(&self, context: &Context, record: &'a Record) -> Value {
-        let left_value = self.left.evaluate(context, record);
-        let right_value = self.right.evaluate(context, record);
+    fn evaluate<'a>(&self, functions: &Functions, context: &Context, record: &'a Record) -> Value {
+        let left_value = self.left.evaluate(functions, context, record);
+        let right_value = self.right.evaluate(functions, context, record);
 
         let result = if let (Value::Numeric(left_number), Value::Numeric(right_number)) =
             (&left_value, &right_value)
@@ -134,9 +135,12 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
+    use crate::function::Functions;
+    use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Context, Record<'static>) {
+    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
         (
+            HashMap::new(),
             Context::empty(),
             Record {
                 full_line: "",
@@ -147,61 +151,79 @@ mod tests {
 
     #[test]
     fn test_comparing_numbers() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let parser = comparison_parser(parse_literal);
 
         let result = parser("1 < 2");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser("1 > 2");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
 
     #[test]
     fn test_comparing_strings() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let parser = comparison_parser(parse_literal);
 
         let result = parser(r#""a" < "b""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""A" <= "a""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
 
     #[test]
     fn test_comparing_numbers_and_strings() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let parser = comparison_parser(parse_literal);
 
         // Numbers come before letters
         let result = parser(r#""a" < 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#""1" == 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(1)),
         );
     }

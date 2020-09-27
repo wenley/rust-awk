@@ -9,6 +9,7 @@ use nom::{
 
 use crate::{
     basic_types::{Context, Record},
+    function::Functions,
     value::{parse_numeric, NumericValue, Value},
 };
 
@@ -30,7 +31,12 @@ impl Expression for Literal {
         }
     }
 
-    fn evaluate<'a>(&self, _context: &Context, _record: &'a Record) -> Value {
+    fn evaluate<'a>(
+        &self,
+        _functions: &Functions,
+        _context: &Context,
+        _record: &'a Record,
+    ) -> Value {
         match self {
             Literal::String(string) => Value::String(string.clone()),
             Literal::Numeric(numeric) => Value::Numeric(numeric.clone()),
@@ -95,9 +101,12 @@ fn parse_regex_literal(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::function::Functions;
+    use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Context, Record<'static>) {
+    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
         (
+            HashMap::new(),
             Context::empty(),
             Record {
                 full_line: "",
@@ -108,41 +117,50 @@ mod tests {
 
     #[test]
     fn literals_can_evaluate() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let string = Literal::String("hello".to_string());
         assert_eq!(
-            string.evaluate(&context, &record),
+            string.evaluate(&functions, &mut context, &record),
             Value::String("hello".to_string())
         );
         let numeric = Literal::Numeric(NumericValue::Integer(0));
         assert_eq!(
-            numeric.evaluate(&context, &record),
+            numeric.evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(0))
         );
     }
 
     #[test]
     fn test_parse_literals() {
-        let (context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
 
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_literal(r#""hello""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::String("hello".to_string()),
         );
 
         let result = parse_literal(r#""hello world""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&context, &record),
+            result
+                .unwrap()
+                .1
+                .evaluate(&functions, &mut context, &record),
             Value::String("hello world".to_string()),
         );
     }

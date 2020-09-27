@@ -5,6 +5,7 @@ use nom::{re_find, IResult};
 use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
     basic_types::{Context, Record},
+    function::Functions,
     value::Value,
 };
 
@@ -18,7 +19,12 @@ impl Expression for Variable {
         None
     }
 
-    fn evaluate<'a>(&self, context: &Context, _record: &'a Record) -> Value {
+    fn evaluate<'a>(
+        &self,
+        _functions: &Functions,
+        context: &Context,
+        _record: &'a Record,
+    ) -> Value {
         context.fetch_variable(&self.variable_name)
     }
 }
@@ -59,10 +65,13 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::function::Functions;
     use crate::value::NumericValue;
+    use std::collections::HashMap;
 
-    fn empty_context_and_record() -> (Context, Record<'static>) {
+    fn empty_context_and_record() -> (Functions, Context, Record<'static>) {
         (
+            HashMap::new(),
             Context::empty(),
             Record {
                 full_line: "",
@@ -73,7 +82,7 @@ mod tests {
 
     #[test]
     fn variables_can_evaluate() {
-        let (mut context, record) = empty_context_and_record();
+        let (functions, mut context, record) = empty_context_and_record();
         let value = Value::Numeric(NumericValue::Integer(1));
         context.assign_variable("foo", value.clone());
 
@@ -81,7 +90,7 @@ mod tests {
             Variable {
                 variable_name: "foo".to_string()
             }
-            .evaluate(&context, &record),
+            .evaluate(&functions, &mut context, &record),
             value,
         );
     }
