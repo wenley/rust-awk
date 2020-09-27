@@ -28,6 +28,19 @@ impl Expression for FunctionCall {
         context: &mut Context,
         record: &'a Record,
     ) -> Value {
+        let function = match functions.get(&self.name) {
+            Some(func) => func,
+            None => panic!("Could not find function with name {}", self.name),
+        };
+        let values: Vec<Value> = self
+            .arguments
+            .iter()
+            .map(|exp| exp.evaluate(functions, context, record))
+            .collect();
+
+        // TODO: Capture this output
+        function.invoke_with(values, functions, context, record);
+
         // TODO: Actually return a proper return value
         Value::String("".to_string())
     }

@@ -1,8 +1,7 @@
 use crate::value::Value;
 use regex;
-use std::collections::HashMap;
 
-use crate::function::{FunctionDefinition, StackFrame};
+use crate::function::{StackFrame};
 
 pub(crate) struct Record<'a> {
     pub(crate) full_line: &'a str,
@@ -16,10 +15,10 @@ enum FieldSeparator {
     Regex(regex::Regex),
 }
 
+// TODO: Rename this to VariableValues or something
 pub(crate) struct Context {
     field_separator: FieldSeparator,
     global_variables: StackFrame,
-    functions: HashMap<String, FunctionDefinition>,
     function_variables: Vec<StackFrame>,
 }
 
@@ -27,7 +26,6 @@ impl Context {
     pub(crate) fn empty() -> Context {
         Context {
             field_separator: FieldSeparator::Character(' '),
-            functions: HashMap::new(),
             global_variables: StackFrame::empty(),
             function_variables: vec![],
         }
