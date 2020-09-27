@@ -64,11 +64,7 @@ mod tests {
     fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         let variables = Variables::empty();
         let record = variables.record_for_line("");
-        (
-            HashMap::new(),
-            variables,
-            record,
-        )
+        (HashMap::new(), variables, record)
     }
 
     #[test]

@@ -56,18 +56,14 @@ pub(crate) fn parse_item(input: &str) -> IResult<&str, Item> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::function::Functions;
     use crate::basic_types::Record;
+    use crate::function::Functions;
     use std::collections::HashMap;
 
     fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
         let variables = Variables::empty();
         let record = variables.record_for_line("");
-        (
-            HashMap::new(),
-            variables,
-            record,
-        )
+        (HashMap::new(), variables, record)
     }
 
     #[test]

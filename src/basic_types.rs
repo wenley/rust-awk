@@ -32,7 +32,7 @@ pub(crate) struct MutableContext<'a> {
     pub(crate) record: Option<&'a Record<'a>>,
 }
 
-impl <'a>MutableContext<'a> {
+impl<'a> MutableContext<'a> {
     pub(crate) fn fetch_field(&self, index: i64) -> Value {
         match self.record {
             None => Value::String("".to_string()),
@@ -44,7 +44,7 @@ impl <'a>MutableContext<'a> {
                     .get((i - 1) as usize)
                     .map(|s| Value::String(s.to_string()))
                     .unwrap_or(Value::Uninitialized),
-            }
+            },
         }
     }
 }
