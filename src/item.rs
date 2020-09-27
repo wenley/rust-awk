@@ -1,9 +1,4 @@
-use nom::{
-    character::complete::multispace0,
-    combinator::map,
-    sequence::tuple,
-    IResult,
-};
+use nom::{character::complete::multispace0, combinator::map, sequence::tuple, IResult};
 
 use crate::{
     action::{parse_action, Action},
