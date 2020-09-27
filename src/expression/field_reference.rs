@@ -33,18 +33,7 @@ impl Expression for FieldReference {
             NumericValue::Integer(i) => i,
             NumericValue::Float(f) => f.floor() as i64,
         };
-        match unsafe_index {
-            i if i < 0 => panic!("Field indexes cannot be negative: {}", unsafe_index),
-            // TODO: go through context to get these fields
-            i if i == 0 => Value::String(context.record.unwrap().full_line.to_string()),
-            i => context
-                .record
-                .unwrap()
-                .fields
-                .get((i - 1) as usize)
-                .map(|s| Value::String(s.to_string()))
-                .unwrap_or(Value::Uninitialized),
-        }
+        context.fetch_field(unsafe_index)
     }
 }
 

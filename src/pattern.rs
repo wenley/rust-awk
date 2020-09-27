@@ -23,7 +23,7 @@ impl Pattern {
         match self {
             Pattern::MatchEverything => true,
             Pattern::Expression(expression) => match expression.regex() {
-                Some(regex) => regex.is_match(context.record.unwrap().full_line),
+                Some(regex) => regex.is_match(&context.fetch_field(0).coerce_to_string()),
                 None => expression
                     .evaluate(functions, context)
                     .coercion_to_boolean(),

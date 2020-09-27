@@ -32,6 +32,24 @@ pub(crate) struct MutableContext<'a> {
     pub(crate) record: Option<&'a Record<'a>>,
 }
 
+impl <'a>MutableContext<'a> {
+    pub(crate) fn fetch_field(&self, index: i64) -> Value {
+        match self.record {
+            None => Value::String("".to_string()),
+            Some(record) => match index {
+                i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
+                // TODO: go through context to get these fields
+                i if i == 0 => Value::String(record.full_line.to_string()),
+                i => record
+                    .fields
+                    .get((i - 1) as usize)
+                    .map(|s| Value::String(s.to_string()))
+                    .unwrap_or(Value::Uninitialized),
+            }
+        }
+    }
+}
+
 impl VariableStore for MutableContext<'_> {
     fn fetch_variable(&self, variable_name: &str) -> Value {
         self.variables.fetch_variable(variable_name)
