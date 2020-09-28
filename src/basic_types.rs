@@ -80,7 +80,7 @@ impl StackFrame {
         }
     }
 
-    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
+    fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
         self.variables.get(variable_name).map(|val| val.clone())
     }
 
