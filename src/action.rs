@@ -257,10 +257,9 @@ mod tests {
     #[test]
     fn print_statement_produces_value() {
         let (functions, mut empty_variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut empty_variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut empty_variables);
+        context.set_record(&record);
+
         let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
             print_action.output_for_line(&functions, &mut context),
@@ -271,10 +270,8 @@ mod tests {
     #[test]
     fn if_produces_correct_value() {
         let (functions, mut empty_variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut empty_variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut empty_variables);
+        context.set_record(&record);
 
         let if_conditional = parse_action(
             r#"{
@@ -312,10 +309,8 @@ mod tests {
     #[test]
     fn assignment_updates_variables() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
 
         let assign_action = parse_action(
             r#"{
@@ -334,10 +329,9 @@ mod tests {
     #[test]
     fn test_parse_statements() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let result = parse_print_statement(r#"print("hello")"#);
         assert!(result.is_ok());
         assert_eq!(
@@ -367,10 +361,9 @@ mod tests {
     #[test]
     fn test_parse_if_else_statement() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let result = parse_simple_statement(
             r#"if (1) {
             print("hello");
@@ -389,10 +382,9 @@ mod tests {
     #[test]
     fn test_parse_while_statement() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let result = parse_simple_statement(
             r#"while (0) {
                 print("hello");
@@ -412,10 +404,9 @@ mod tests {
     #[test]
     fn test_parse_do_while_statement() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let result = parse_simple_statement(
             r#"do {
                 print("hello");
@@ -433,10 +424,9 @@ mod tests {
     #[test]
     fn test_parse_assign_statement() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let result = parse_simple_statement(r#"variable = "hi""#);
         let empty_vec: Vec<&'static str> = vec![];
         assert!(result.is_ok());

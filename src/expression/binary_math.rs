@@ -193,10 +193,9 @@ mod tests {
     #[test]
     fn binary_expressions_can_evaluate() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         assert_eq!(
             BinaryMath {
                 left: Box::new(Literal::Numeric(NumericValue::Integer(2))),
@@ -211,10 +210,9 @@ mod tests {
     #[test]
     fn binary_expressions_can_parse() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let parser = addition_parser(multiplication_parser(parse_literal));
 
         let result = parser("1 + 2 - 3 + 4 - 5.5");

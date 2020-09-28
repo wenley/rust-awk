@@ -48,6 +48,17 @@ impl<'a> MutableContext<'a> {
         }
     }
 
+    pub(crate) fn for_variables(variables: &mut Variables) -> MutableContext {
+        MutableContext {
+            variables: variables,
+            record: None,
+        }
+    }
+
+    pub(crate) fn set_record(&mut self, record: &'a Record<'a>) {
+        self.record = Some(record);
+    }
+
     pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
     where
         F: FnOnce(&mut Self) -> T,

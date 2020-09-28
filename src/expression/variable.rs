@@ -79,10 +79,8 @@ mod tests {
         let (functions, mut variables, record) = empty_variables_and_record();
         let value = Value::Numeric(NumericValue::Integer(1));
         variables.assign_variable("foo", value.clone());
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
 
         assert_eq!(
             Variable {
@@ -103,10 +101,8 @@ mod tests {
         let function = result.unwrap().1;
         functions.insert("foo".to_string(), function);
 
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
 
         let result = parse_assignable_variable("foo");
         assert!(result.is_ok());

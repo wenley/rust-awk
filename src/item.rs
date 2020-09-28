@@ -32,10 +32,9 @@ impl Item {
     ) -> Vec<String> {
         if let Pattern::Begin = self.pattern {
             let record = variables.record_for_line("");
-            let mut context = MutableContext {
-                variables: variables,
-                record: Some(&record),
-            };
+            let mut context = MutableContext::for_variables(variables);
+            context.set_record(&record);
+
             self.action.output_for_line(functions, &mut context)
         } else {
             vec![]
@@ -70,10 +69,8 @@ mod tests {
     fn test_full_item_parsing() {
         let (functions, mut variables, _) = empty_variables_and_record();
         let record = variables.record_for_line("hello world today");
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
         let empty_string_vec: Vec<&'static str> = vec![];
 
         let result = parse_item(r#"$1 ~ "hello" { print($0); }"#);

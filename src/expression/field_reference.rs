@@ -71,10 +71,8 @@ mod tests {
     fn field_reference_can_evaluate() {
         let (functions, mut variables, _) = empty_variables_and_record();
         let record = variables.record_for_line("first second");
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
 
         assert_eq!(
             FieldReference {
@@ -88,10 +86,9 @@ mod tests {
     #[test]
     fn test_parse_field_reference() {
         let (functions, mut variables, mut record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let parser = field_reference_parser(parse_literal);
 
         let result = parser("$1");
@@ -103,10 +100,8 @@ mod tests {
         );
 
         record = variables.record_for_line("hello");
-        context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
         assert_eq!(
             expression.evaluate(&functions, &mut context),
             Value::String("hello".to_string()),
@@ -123,10 +118,8 @@ mod tests {
     // #[test]
     // fn test_nested_field_references() {
     //     let (functions, mut variables, mut record) = empty_variables_and_record();
-    //     let mut context = MutableContext {
-    //         variables: &mut variables,
-    //         record: Some(&record),
-    //     };
+    //     let mut context = MutableContext::for_variables(&mut variables);
+    //     context.set_record(&record);
     //     record.fields = vec!["2", "3", "hello"];
 
     //     let parser = field_reference_parser(parse_literal);

@@ -97,10 +97,8 @@ mod tests {
     #[test]
     fn test_parse_parens() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
 
         let result = parse_expression("( 1 )");
         assert_eq!(result.is_ok(), true);
@@ -120,10 +118,8 @@ mod tests {
     #[test]
     fn test_boolean_precedence() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
 
         let result = parse_expression("1 && 1 || 0 && 1");
         assert_eq!(result.is_ok(), true);

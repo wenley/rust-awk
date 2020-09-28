@@ -104,10 +104,8 @@ impl ProgramRun {
         let mut record = self.variables.record_for_line(line);
         // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
-        let mut context = MutableContext {
-            variables: &mut self.variables,
-            record: Some(&mut record),
-        };
+        let mut context = MutableContext::for_variables(&mut self.variables);
+        context.set_record(&mut record);
 
         self.program
             .items

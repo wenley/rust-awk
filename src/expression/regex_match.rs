@@ -98,10 +98,9 @@ mod tests {
     #[test]
     fn test_regex_match() {
         let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record(&record);
+
         let parser = regex_parser(addition_parser(parse_literal));
 
         let result = parser("1 ~ 2");
