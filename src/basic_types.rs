@@ -1,7 +1,6 @@
 use crate::value::Value;
 use regex;
-
-use crate::function::StackFrame;
+use std::collections::HashMap;
 
 struct Record<'a> {
     full_line: &'a str,
@@ -67,6 +66,26 @@ impl<'a> MutableContext<'a> {
         let output = f(self);
         self.variables.function_variables.pop();
         output
+    }
+}
+
+pub(crate) struct StackFrame {
+    variables: HashMap<String, Value>,
+}
+
+impl StackFrame {
+    pub(crate) fn empty() -> StackFrame {
+        StackFrame {
+            variables: HashMap::new(),
+        }
+    }
+
+    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
+        self.variables.get(variable_name).map(|val| val.clone())
+    }
+
+    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
+        self.variables.insert(variable_name.to_string(), value);
     }
 }
 

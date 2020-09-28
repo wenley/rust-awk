@@ -11,30 +11,10 @@ use std::ops::Index;
 
 use crate::{
     action::{parse_action, Action},
-    basic_types::{MutableContext, UNINITIALIZED_VALUE},
+    basic_types::{MutableContext, StackFrame, UNINITIALIZED_VALUE},
     expression::variable::parse_variable_name,
     value::Value,
 };
-
-pub(crate) struct StackFrame {
-    variables: HashMap<String, Value>,
-}
-
-impl StackFrame {
-    pub(crate) fn empty() -> StackFrame {
-        StackFrame {
-            variables: HashMap::new(),
-        }
-    }
-
-    pub(crate) fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
-        self.variables.get(variable_name).map(|val| val.clone())
-    }
-
-    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        self.variables.insert(variable_name.to_string(), value);
-    }
-}
 
 pub(crate) struct FunctionDefinition {
     pub(crate) name: String,
