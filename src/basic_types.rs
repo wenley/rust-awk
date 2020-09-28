@@ -3,7 +3,7 @@ use regex;
 
 use crate::function::StackFrame;
 
-pub(crate) struct Record<'a> {
+struct Record<'a> {
     full_line: &'a str,
     fields: Vec<&'a str>,
 }
@@ -28,8 +28,8 @@ pub(crate) struct Variables {
 }
 
 pub(crate) struct MutableContext<'a> {
-    pub(crate) variables: &'a mut Variables,
-    pub(crate) record: Option<Record<'a>>,
+    variables: &'a mut Variables,
+    record: Option<Record<'a>>,
 }
 
 impl<'a> MutableContext<'a> {
@@ -119,7 +119,7 @@ impl Variables {
         }
     }
 
-    pub(super) fn record_for_line<'a>(&self, line: &'a str) -> Record<'a> {
+    fn record_for_line<'a>(&self, line: &'a str) -> Record<'a> {
         let fields = match &self.field_separator {
             FieldSeparator::Character(' ') => line.split_whitespace().collect(),
             FieldSeparator::Character(c1) => line.split(|c2| *c1 == c2).collect(),
