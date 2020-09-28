@@ -22,8 +22,13 @@ pub(crate) mod variable;
 
 pub(crate) use variable::parse_variable_name;
 
+pub(crate) struct Output<T> {
+    value: T,
+    output: Vec<String>,
+}
+
 pub(crate) trait Expression: Debug {
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value;
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Output<Value>;
 
     fn regex<'a>(&'a self) -> Option<&'a Regex>;
 }

@@ -8,7 +8,7 @@ use nom::{
     sequence::{delimited, tuple},
 };
 
-use super::{Expression, ExpressionParseResult};
+use super::{Expression, ExpressionParseResult, Output};
 use crate::{
     basic_types::MutableContext,
     function::Functions,
@@ -37,12 +37,12 @@ impl Expression for BinaryComparison {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let left_value = self.left.evaluate(functions, context);
-        let right_value = self.right.evaluate(functions, context);
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Output<Value> {
+        let mut left_value = self.left.evaluate(functions, context);
+        let mut right_value = self.right.evaluate(functions, context);
 
         let result = if let (Value::Numeric(left_number), Value::Numeric(right_number)) =
-            (&left_value, &right_value)
+            (&left_value.value, &right_value.value)
         {
             let (x, y) = match (left_number, right_number) {
                 (NumericValue::Integer(x), NumericValue::Integer(y)) => ((*x as f64), (*y as f64)),
@@ -60,8 +60,8 @@ impl Expression for BinaryComparison {
             }
         } else {
             let (s1, s2) = (
-                left_value.coerce_to_string(),
-                right_value.coerce_to_string(),
+                left_value.value.coerce_to_string(),
+                right_value.value.coerce_to_string(),
             );
             match &self.operator {
                 Operator::Less => s1 < s2,
@@ -74,7 +74,13 @@ impl Expression for BinaryComparison {
         };
 
         let int_value = if result { 1 } else { 0 };
-        Value::Numeric(NumericValue::Integer(int_value))
+        let mut output = left_value.output;
+        output.append(&mut right_value.output);
+
+        Output {
+            value: Value::Numeric(NumericValue::Integer(int_value)),
+            output: output,
+        }
     }
 }
 
