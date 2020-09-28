@@ -63,24 +63,23 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::{parse_function, Functions};
     use crate::value::NumericValue;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn variables_can_evaluate() {
-        let (functions, mut variables, record) = empty_variables_and_record();
+        let (functions, mut variables) = empty_functions_and_variables();
         let value = Value::Numeric(NumericValue::Integer(1));
         variables.assign_variable("foo", value.clone());
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record(&record);
+        context.set_record_with_line("");
 
         assert_eq!(
             Variable {
@@ -94,7 +93,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn blocks_name_collisions() {
-        let (mut functions, mut variables, record) = empty_variables_and_record();
+        let (mut functions, mut variables) = empty_functions_and_variables();
         let value = Value::Numeric(NumericValue::Integer(1));
         let result = parse_function(r#"function foo(a) {}"#);
         assert!(result.is_ok());
@@ -102,7 +101,7 @@ mod tests {
         functions.insert("foo".to_string(), function);
 
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record(&record);
+        context.set_record_with_line("");
 
         let result = parse_assignable_variable("foo");
         assert!(result.is_ok());

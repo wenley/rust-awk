@@ -101,11 +101,10 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
 
 impl ProgramRun {
     pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
-        let mut record = self.variables.record_for_line(line);
         // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
         let mut context = MutableContext::for_variables(&mut self.variables);
-        context.set_record(&mut record);
+        context.set_record_with_line(line);
 
         self.program
             .items

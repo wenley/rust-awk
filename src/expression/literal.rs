@@ -96,21 +96,20 @@ fn parse_regex_literal(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn literals_can_evaluate() {
-        let (functions, mut variables, record) = empty_variables_and_record();
+        let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record(&record);
+        context.set_record_with_line("");
 
         let string = Literal::String("hello".to_string());
         assert_eq!(
@@ -126,9 +125,9 @@ mod tests {
 
     #[test]
     fn test_parse_literals() {
-        let (functions, mut variables, record) = empty_variables_and_record();
+        let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record(&record);
+        context.set_record_with_line("");
 
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);

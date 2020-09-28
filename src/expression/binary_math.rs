@@ -180,21 +180,20 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn binary_expressions_can_evaluate() {
-        let (functions, mut variables, record) = empty_variables_and_record();
+        let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record(&record);
+        context.set_record_with_line("");
 
         assert_eq!(
             BinaryMath {
@@ -209,9 +208,9 @@ mod tests {
 
     #[test]
     fn binary_expressions_can_parse() {
-        let (functions, mut variables, record) = empty_variables_and_record();
+        let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record(&record);
+        context.set_record_with_line("");
 
         let parser = addition_parser(multiplication_parser(parse_literal));
 

@@ -29,12 +29,12 @@ pub(crate) struct Variables {
 
 pub(crate) struct MutableContext<'a> {
     pub(crate) variables: &'a mut Variables,
-    pub(crate) record: Option<&'a Record<'a>>,
+    pub(crate) record: Option<Record<'a>>,
 }
 
 impl<'a> MutableContext<'a> {
     pub(crate) fn fetch_field(&self, index: i64) -> Value {
-        match self.record {
+        match &self.record {
             None => Value::String("".to_string()),
             Some(record) => match index {
                 i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
@@ -55,8 +55,8 @@ impl<'a> MutableContext<'a> {
         }
     }
 
-    pub(crate) fn set_record(&mut self, record: &'a Record<'a>) {
-        self.record = Some(record);
+    pub(crate) fn set_record_with_line(&mut self, line: &'a str) {
+        self.record = Some(self.variables.record_for_line(line));
     }
 
     pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
