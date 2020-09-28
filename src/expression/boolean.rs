@@ -148,23 +148,21 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn test_and_parsing() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = and_parser(parse_literal);
 
         let result = parser(r#""a" && 1"#);
@@ -191,11 +189,10 @@ mod tests {
 
     #[test]
     fn test_or_parsing() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = or_parser(parse_literal);
 
         let result = parser(r#""a" || 1"#);
@@ -229,11 +226,10 @@ mod tests {
 
     #[test]
     fn test_not_parsing() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = not_parser(parse_literal);
 
         let result = parser(r#"!1"#);
@@ -274,11 +270,10 @@ mod tests {
 
     #[test]
     fn test_iteration_compression() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = not_parser(parse_literal);
 
         let result = parser(r#""abc""#);

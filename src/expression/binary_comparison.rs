@@ -135,23 +135,21 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn test_comparing_numbers() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = comparison_parser(parse_literal);
 
         let result = parser("1 < 2");
@@ -171,11 +169,10 @@ mod tests {
 
     #[test]
     fn test_comparing_strings() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = comparison_parser(parse_literal);
 
         let result = parser(r#""a" < "b""#);
@@ -195,11 +192,10 @@ mod tests {
 
     #[test]
     fn test_comparing_numbers_and_strings() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = comparison_parser(parse_literal);
 
         // Numbers come before letters

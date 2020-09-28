@@ -85,23 +85,21 @@ where
 mod tests {
     use super::super::{binary_math::addition_parser, literal::parse_literal};
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn test_regex_match() {
-        let (functions, mut variables, record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = regex_parser(addition_parser(parse_literal));
 
         let result = parser("1 ~ 2");

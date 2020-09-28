@@ -57,24 +57,20 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::{Record, Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
-    fn empty_variables_and_record() -> (Functions, Variables, Record<'static>) {
+    fn empty_functions_and_variables() -> (Functions, Variables) {
         let variables = Variables::empty();
-        let record = variables.record_for_line("");
-        (HashMap::new(), variables, record)
+        (HashMap::new(), variables)
     }
 
     #[test]
     fn field_reference_can_evaluate() {
-        let (functions, mut variables, _) = empty_variables_and_record();
-        let record = variables.record_for_line("first second");
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("first second");
 
         assert_eq!(
             FieldReference {
@@ -87,11 +83,10 @@ mod tests {
 
     #[test]
     fn test_parse_field_reference() {
-        let (functions, mut variables, mut record) = empty_variables_and_record();
-        let mut context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        let (functions, mut variables) = empty_functions_and_variables();
+        let mut context = MutableContext::for_variables(&mut variables);
+        context.set_record_with_line("");
+
         let parser = field_reference_parser(parse_literal);
 
         let result = parser("$1");
@@ -102,11 +97,7 @@ mod tests {
             Value::Uninitialized,
         );
 
-        record = variables.record_for_line("hello");
-        context = MutableContext {
-            variables: &mut variables,
-            record: Some(&record),
-        };
+        context.set_record_with_line("hello");
         assert_eq!(
             expression.evaluate(&functions, &mut context),
             Value::String("hello".to_string()),
@@ -122,12 +113,9 @@ mod tests {
 
     // #[test]
     // fn test_nested_field_references() {
-    //     let (functions, mut variables, mut record) = empty_variables_and_record();
-    //     let mut context = MutableContext {
-    //         variables: &mut variables,
-    //         record: Some(&record),
-    //     };
-    //     record.fields = vec!["2", "3", "hello"];
+    //     let (functions, mut variables, mut record) = empty_functions_and_variables();
+    //     let mut context = MutableContext::for_variables(&mut variables);
+    //     context.set_record_with_line("2 3 hello");
 
     //     let parser = field_reference_parser(parse_literal);
     //     let result = parser("$$$1");
