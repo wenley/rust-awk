@@ -30,8 +30,4 @@ impl<T> Printable<T> {
             output: output,
         }
     }
-
-    pub(crate) fn append(&mut self, more_output: &mut Vec<String>) {
-        self.output.append(more_output);
-    }
 }

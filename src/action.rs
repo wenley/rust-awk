@@ -26,14 +26,11 @@ impl Action {
         functions: &Functions,
         context: &mut MutableContext,
     ) -> Printable<()> {
-        Printable {
-            value: (),
-            output: self
-                .statements
-                .iter()
-                .flat_map(|statement| statement.evaluate(functions, context).output)
-                .collect(),
-        }
+        self.statements
+            .iter()
+            .fold(Printable::wrap(()), |result, statement| {
+                result.and_then(|_| statement.evaluate(functions, context))
+            })
     }
 }
 
@@ -112,7 +109,7 @@ impl Statement {
                 let mut result = Printable::wrap(());
                 loop {
                     if value.coercion_to_boolean() {
-                        result.append(&mut body.output_for_line(functions, context).output);
+                        result = result.and_then(|_| body.output_for_line(functions, context));
                         value = condition.evaluate(functions, context);
                     } else {
                         break;
@@ -123,7 +120,7 @@ impl Statement {
             Statement::DoWhile { body, condition } => {
                 let mut result = Printable::wrap(());
                 loop {
-                    result.append(&mut body.output_for_line(functions, context).output);
+                    result = result.and_then(|_| body.output_for_line(functions, context));
                     let value = condition.evaluate(functions, context);
                     if !value.coercion_to_boolean() {
                         break;
