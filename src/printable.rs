@@ -30,4 +30,15 @@ impl<T> Printable<T> {
             output: output,
         }
     }
+
+    pub(crate) fn map<U, F>(self, f: F) -> Printable<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        let Printable { value, output } = self;
+        Printable {
+            value: f(value),
+            output: output,
+        }
+    }
 }

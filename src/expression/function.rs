@@ -27,7 +27,7 @@ impl Expression for FunctionCall {
         self.arguments
             .iter()
             .fold(Printable::wrap(vec![]), |printable, argument| {
-                printable.and_then(|vec| {
+                printable.and_then(|mut vec| {
                     let Printable { value: v, output } = argument.evaluate(functions, context);
                     vec.push(v);
                     Printable {

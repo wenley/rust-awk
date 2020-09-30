@@ -12,6 +12,7 @@ use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::MutableContext,
     function::Functions,
+    printable::Printable,
     value::{NumericValue, Value},
 };
 
@@ -37,9 +38,15 @@ impl Expression for BinaryComparison {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let left_value = self.left.evaluate(functions, context);
-        let right_value = self.right.evaluate(functions, context);
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        let Printable {
+            value: left_value,
+            output: mut left_output,
+        } = self.left.evaluate(functions, context);
+        let Printable {
+            value: right_value,
+            output: mut right_output,
+        } = self.right.evaluate(functions, context);
 
         let result = if let (Value::Numeric(left_number), Value::Numeric(right_number)) =
             (&left_value, &right_value)
@@ -74,7 +81,11 @@ impl Expression for BinaryComparison {
         };
 
         let int_value = if result { 1 } else { 0 };
-        Value::Numeric(NumericValue::Integer(int_value))
+        left_output.append(&mut right_output);
+        Printable {
+            value: Value::Numeric(NumericValue::Integer(int_value)),
+            output: left_output,
+        }
     }
 }
 
@@ -155,14 +166,14 @@ mod tests {
         let result = parser("1 < 2");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser("1 > 2");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
@@ -178,14 +189,14 @@ mod tests {
         let result = parser(r#""a" < "b""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""A" <= "a""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
@@ -202,14 +213,14 @@ mod tests {
         let result = parser(r#""a" < 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#""1" == 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
     }

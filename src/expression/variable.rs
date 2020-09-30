@@ -6,6 +6,7 @@ use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
     basic_types::{MutableContext, VariableStore},
     function::Functions,
+    printable::Printable,
     value::Value,
 };
 
@@ -19,8 +20,8 @@ impl Expression for Variable {
         None
     }
 
-    fn evaluate(&self, _functions: &Functions, context: &mut MutableContext) -> Value {
-        context.fetch_variable(&self.variable_name)
+    fn evaluate(&self, _functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        Printable::wrap(context.fetch_variable(&self.variable_name))
     }
 }
 
@@ -85,7 +86,8 @@ mod tests {
             Variable {
                 variable_name: "foo".to_string()
             }
-            .evaluate(&functions, &mut context),
+            .evaluate(&functions, &mut context)
+            .value,
             value,
         );
     }

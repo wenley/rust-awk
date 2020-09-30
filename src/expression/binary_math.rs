@@ -11,6 +11,7 @@ use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::MutableContext,
     function::Functions,
+    printable::Printable,
     value::{NumericValue, Value},
 };
 
@@ -36,11 +37,21 @@ impl Expression for BinaryMath {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let left_value = self.left.evaluate(functions, context).coerce_to_numeric();
-        let right_value = self.right.evaluate(functions, context).coerce_to_numeric();
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        let Printable {
+            value: left_value,
+            output: mut left_output,
+        } = self.left.evaluate(functions, context);
+        let Printable {
+            value: right_value,
+            output: mut right_output,
+        } = self.right.evaluate(functions, context);
 
-        match (&self.operator, left_value, right_value) {
+        let value = match (
+            &self.operator,
+            left_value.coerce_to_numeric(),
+            right_value.coerce_to_numeric(),
+        ) {
             (Operator::Add, NumericValue::Integer(x), NumericValue::Integer(y)) => {
                 Value::Numeric(NumericValue::Integer(x + y))
             }
@@ -106,6 +117,11 @@ impl Expression for BinaryMath {
             (Operator::Modulo, NumericValue::Float(x), NumericValue::Float(y)) => {
                 Value::Numeric(NumericValue::Float(x % y))
             }
+        };
+        left_output.append(&mut right_output);
+        Printable {
+            value: value,
+            output: left_output,
         }
     }
 }
@@ -201,7 +217,8 @@ mod tests {
                 operator: Operator::Add,
                 right: Box::new(Literal::Numeric(NumericValue::Integer(3))),
             }
-            .evaluate(&functions, &mut context),
+            .evaluate(&functions, &mut context)
+            .value,
             Value::Numeric(NumericValue::Integer(5)),
         );
     }
@@ -217,21 +234,21 @@ mod tests {
         let result = parser("1 + 2 - 3 + 4 - 5.5");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Float(-1.5)),
         );
 
         let result = parser("1 * 2 + 3 * 4");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(14)),
         );
 
         let result = parser("6 / 5 * 4 / 3");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             // Floating point error!
             Value::Numeric(NumericValue::Float(1.5999999999999999)),
         );
@@ -239,14 +256,14 @@ mod tests {
         let result = parser("6 / 3");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(2)),
         );
 
         let result = parser("6 % 5 * 4 / 3 % 2");
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Float(1.3333333333333333)),
         );
     }
