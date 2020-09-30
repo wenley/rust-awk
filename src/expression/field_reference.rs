@@ -11,6 +11,7 @@ use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::MutableContext,
     function::Functions,
+    printable::Printable,
     value::{NumericValue, Value},
 };
 
@@ -24,16 +25,14 @@ impl Expression for FieldReference {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let value = self
-            .expression
-            .evaluate(functions, context)
-            .coerce_to_numeric();
-        let unsafe_index = match value {
-            NumericValue::Integer(i) => i,
-            NumericValue::Float(f) => f.floor() as i64,
-        };
-        context.fetch_field(unsafe_index)
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        self.expression.evaluate(functions, context).map(|value| {
+            let unsafe_index = match value.coerce_to_numeric() {
+                NumericValue::Integer(i) => i,
+                NumericValue::Float(f) => f.floor() as i64,
+            };
+            context.fetch_field(unsafe_index)
+        })
     }
 }
 
@@ -76,7 +75,8 @@ mod tests {
             FieldReference {
                 expression: Box::new(Literal::Numeric(NumericValue::Integer(1)))
             }
-            .evaluate(&functions, &mut context),
+            .evaluate(&functions, &mut context)
+            .value,
             Value::String("first".to_string()),
         );
     }
@@ -93,20 +93,20 @@ mod tests {
         assert_eq!(result.is_ok(), true);
         let expression = result.unwrap().1;
         assert_eq!(
-            expression.evaluate(&functions, &mut context),
+            expression.evaluate(&functions, &mut context).value,
             Value::Uninitialized,
         );
 
         context.set_record_with_line("hello");
         assert_eq!(
-            expression.evaluate(&functions, &mut context),
+            expression.evaluate(&functions, &mut context).value,
             Value::String("hello".to_string()),
         );
 
         let result = parser("$     1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::String("hello".to_string()),
         );
     }
@@ -122,7 +122,7 @@ mod tests {
     //     assert!(result.is_ok(), true);
     //     let expression = result.unwrap().1;
     //     assert_eq!(
-    //         expression.evaluate(&functions, &mut context),
+    //         expression.evaluate(&functions, &mut context).value,
     //         Value::String("hello".to_string()),
     //     );
     // }

@@ -14,6 +14,8 @@ pub(crate) enum Value {
     Uninitialized,
 }
 
+pub(crate) static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
+
 impl Value {
     pub(crate) fn coerce_to_string(&self) -> String {
         match self {

@@ -10,6 +10,7 @@ use nom::{
 use crate::{
     basic_types::MutableContext,
     function::Functions,
+    printable::Printable,
     value::{parse_numeric, NumericValue, Value},
 };
 
@@ -31,8 +32,8 @@ impl Expression for Literal {
         }
     }
 
-    fn evaluate(&self, _functions: &Functions, _context: &mut MutableContext) -> Value {
-        match self {
+    fn evaluate(&self, _functions: &Functions, _context: &mut MutableContext) -> Printable<Value> {
+        let value = match self {
             Literal::String(string) => Value::String(string.clone()),
             Literal::Numeric(numeric) => Value::Numeric(numeric.clone()),
             Literal::Regex(_) => {
@@ -44,7 +45,8 @@ impl Expression for Literal {
                 // will be interpreted as such
                 Value::Uninitialized
             }
-        }
+        };
+        Printable::wrap(value)
     }
 }
 
@@ -113,12 +115,12 @@ mod tests {
 
         let string = Literal::String("hello".to_string());
         assert_eq!(
-            string.evaluate(&functions, &mut context),
+            string.evaluate(&functions, &mut context).value,
             Value::String("hello".to_string())
         );
         let numeric = Literal::Numeric(NumericValue::Integer(0));
         assert_eq!(
-            numeric.evaluate(&functions, &mut context),
+            numeric.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0))
         );
     }
@@ -132,21 +134,21 @@ mod tests {
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_literal(r#""hello""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::String("hello".to_string()),
         );
 
         let result = parse_literal(r#""hello world""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::String("hello world".to_string()),
         );
     }

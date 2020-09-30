@@ -12,6 +12,8 @@ use crate::{
     basic_types::MutableContext,
     expression::{parse_assignable, parse_expression, Assign, Expression},
     function::Functions,
+    printable::Printable,
+    value::UNINITIALIZED_VALUE,
 };
 
 #[derive(Debug)]
@@ -24,11 +26,12 @@ impl Action {
         &self,
         functions: &Functions,
         context: &mut MutableContext,
-    ) -> Vec<String> {
+    ) -> Printable<()> {
         self.statements
             .iter()
-            .flat_map(|statement| statement.evaluate(functions, context))
-            .collect()
+            .fold(Printable::wrap(()), |result, statement| {
+                result.and_then(|_| statement.evaluate(functions, context))
+            })
     }
 }
 
@@ -68,57 +71,63 @@ enum Statement {
 }
 
 impl Statement {
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Vec<String> {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()> {
         match self {
-            Statement::Print(expressions) => {
-                let output_line = expressions
-                    .iter()
-                    .map(|e| e.evaluate(functions, context).coerce_to_string())
-                    .collect::<Vec<String>>()
-                    .join(" ");
-                vec![output_line]
-            }
+            Statement::Print(expressions) => expressions
+                .iter()
+                .fold(Printable::wrap(vec![]), |result, e| {
+                    result.and_then(|mut vec| {
+                        e.evaluate(functions, context).map(|value| {
+                            vec.push(value.coerce_to_string());
+                            vec
+                        })
+                    })
+                })
+                .and_then(|strings| Printable {
+                    value: (),
+                    output: vec![strings.join(" ")],
+                }),
             Statement::IfElse {
                 condition,
                 if_branch,
                 else_branch,
-            } => {
-                let result = condition.evaluate(functions, context).coercion_to_boolean();
-                if result {
+            } => condition.evaluate(functions, context).and_then(|value| {
+                if value.coercion_to_boolean() {
                     if_branch.output_for_line(functions, context)
                 } else {
                     else_branch.output_for_line(functions, context)
                 }
-            }
+            }),
             Statement::Assign { assignable, value } => {
-                // TODO: Check for function / variable name collision
-                let value = value.evaluate(functions, context);
-                assignable.assign(functions, context, value);
-                vec![]
+                value.evaluate(functions, context).map(|value| {
+                    assignable.assign(functions, context, value);
+                    ()
+                })
             }
             Statement::While { condition, body } => {
-                let mut value = condition.evaluate(functions, context);
-                let mut output = vec![];
+                let mut result = condition.evaluate(functions, context);
                 loop {
-                    if value.coercion_to_boolean() {
-                        output.append(&mut body.output_for_line(functions, context));
-                        value = condition.evaluate(functions, context);
+                    if result.value.coercion_to_boolean() {
+                        result = result
+                            .and_then(|_| body.output_for_line(functions, context))
+                            .and_then(|_| condition.evaluate(functions, context));
                     } else {
                         break;
                     }
                 }
-                output
+                result.map(|_| ())
             }
             Statement::DoWhile { body, condition } => {
-                let mut output = vec![];
+                let mut result = Printable::wrap(UNINITIALIZED_VALUE.clone());
                 loop {
-                    output.append(&mut body.output_for_line(functions, context));
-                    let value = condition.evaluate(functions, context);
-                    if !value.coercion_to_boolean() {
+                    result = result
+                        .and_then(|_| body.output_for_line(functions, context))
+                        .and_then(|_| condition.evaluate(functions, context));
+                    if !result.value.coercion_to_boolean() {
                         break;
                     }
                 }
-                output
+                result.map(|_| ())
             }
         }
     }
@@ -261,7 +270,9 @@ mod tests {
 
         let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
-            print_action.output_for_line(&functions, &mut context),
+            print_action
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["hello"],
         );
     }
@@ -284,7 +295,9 @@ mod tests {
         .unwrap()
         .1;
         assert_eq!(
-            if_conditional.output_for_line(&functions, &mut context),
+            if_conditional
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["if-branch"],
         );
 
@@ -300,7 +313,9 @@ mod tests {
         .unwrap()
         .1;
         assert_eq!(
-            else_conditional.output_for_line(&functions, &mut context),
+            else_conditional
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["else"],
         );
     }
@@ -337,7 +352,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["hello"],
         );
 
@@ -352,7 +368,8 @@ mod tests {
             Action {
                 statements: result.unwrap().1
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["1", "2 extra arg", "hello",],
         );
     }
@@ -373,7 +390,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["hello"],
         );
     }
@@ -395,7 +413,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             empty_vec,
         );
     }
@@ -416,7 +435,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["hello"],
         );
     }
@@ -433,7 +453,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             empty_vec,
         );
     }

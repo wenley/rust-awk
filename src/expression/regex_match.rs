@@ -12,6 +12,7 @@ use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::MutableContext,
     function::Functions,
+    printable::Printable,
     value::{NumericValue, Value},
 };
 
@@ -27,19 +28,31 @@ impl Expression for RegexMatch {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let left_value = self.left.evaluate(functions, context).coerce_to_string();
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        let Printable {
+            value: left_value,
+            output: mut left_output,
+        } = self.left.evaluate(functions, context);
+        let left_string = left_value.coerce_to_string();
 
         let matches = match self.right.regex() {
-            Some(r) => r.is_match(&left_value),
+            Some(r) => r.is_match(&left_string),
             None => {
-                let right_value = self.right.evaluate(functions, context).coerce_to_string();
-                Regex::new(&right_value).unwrap().is_match(&left_value)
+                let Printable {
+                    value: right_value,
+                    output: mut right_output,
+                } = self.right.evaluate(functions, context);
+                let right_string = right_value.coerce_to_string();
+                left_output.append(&mut right_output);
+                Regex::new(&right_string).unwrap().is_match(&left_string)
             }
         };
         let int_value = if matches ^ self.negated { 1 } else { 0 };
 
-        Value::Numeric(NumericValue::Integer(int_value))
+        Printable {
+            value: Value::Numeric(NumericValue::Integer(int_value)),
+            output: left_output,
+        }
     }
 }
 
@@ -106,7 +119,7 @@ mod tests {
         assert!(result.is_ok());
         let expression = result.unwrap().1;
         assert_eq!(
-            expression.evaluate(&functions, &mut context),
+            expression.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
 
@@ -120,7 +133,7 @@ mod tests {
         let (remainder, expression) = result.unwrap();
         assert_eq!(remainder, "");
         assert_eq!(
-            expression.evaluate(&functions, &mut context),
+            expression.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
@@ -128,7 +141,7 @@ mod tests {
         assert!(result.is_ok());
         let expression = result.unwrap().1;
         assert_eq!(
-            expression.evaluate(&functions, &mut context),
+            expression.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
     }

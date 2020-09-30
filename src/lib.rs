@@ -18,12 +18,14 @@ mod function;
 mod item;
 mod parse_args;
 mod pattern;
+mod printable;
 mod value;
 
 use crate::{
     basic_types::{MutableContext, VariableStore, Variables},
     function::{parse_function, FunctionDefinition, Functions},
     item::{parse_item, Item},
+    printable::Printable,
 };
 
 pub struct Program {
@@ -109,8 +111,10 @@ impl ProgramRun {
         self.program
             .items
             .iter()
-            .flat_map(|item: &item::Item| item.output_for_line(functions, &mut context))
-            .collect()
+            .fold(Printable::wrap(()), |result, item| {
+                result.and_then(|_| item.output_for_line(functions, &mut context))
+            })
+            .output
     }
 
     pub fn output_for_begin_items(&mut self) -> Vec<String> {
@@ -120,8 +124,10 @@ impl ProgramRun {
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_begin(functions, variables))
-            .collect()
+            .fold(Printable::wrap(()), |result, item| {
+                result.and_then(|_| item.output_for_begin(functions, variables))
+            })
+            .output
     }
 
     pub fn apply_args(&mut self, args: &parse_args::Args) {

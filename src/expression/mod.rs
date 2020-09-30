@@ -9,7 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::{basic_types::MutableContext, function::Functions, value::Value};
+use crate::{basic_types::MutableContext, function::Functions, printable::Printable, value::Value};
 
 mod binary_comparison;
 mod binary_math;
@@ -23,7 +23,7 @@ pub(crate) mod variable;
 pub(crate) use variable::parse_variable_name;
 
 pub(crate) trait Expression: Debug {
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value;
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value>;
 
     fn regex<'a>(&'a self) -> Option<&'a Regex>;
 }
@@ -102,14 +102,14 @@ mod tests {
         let result = parse_expression("( 1 )");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_expression("(1) + (2.5)");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Float(3.5))
         );
     }
@@ -123,21 +123,21 @@ mod tests {
         let result = parse_expression("1 && 1 || 0 && 1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1))
         );
 
         let result = parse_expression("1 && 0 || 0 && 1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0))
         );
 
         let result = parse_expression("0 || 1 && 0 || 1");
         assert_eq!(result.is_ok(), true);
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1))
         );
     }

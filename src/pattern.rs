@@ -9,6 +9,7 @@ use crate::{
     basic_types::MutableContext,
     expression::{parse_expression, Expression},
     function::Functions,
+    printable::Printable,
 };
 
 pub(crate) enum Pattern {
@@ -19,17 +20,23 @@ pub(crate) enum Pattern {
 }
 
 impl Pattern {
-    pub(crate) fn matches(&self, functions: &Functions, context: &mut MutableContext) -> bool {
+    pub(crate) fn matches(
+        &self,
+        functions: &Functions,
+        context: &mut MutableContext,
+    ) -> Printable<bool> {
         match self {
-            Pattern::MatchEverything => true,
+            Pattern::MatchEverything => Printable::wrap(true),
             Pattern::Expression(expression) => match expression.regex() {
-                Some(regex) => regex.is_match(&context.fetch_field(0).coerce_to_string()),
+                Some(regex) => {
+                    Printable::wrap(regex.is_match(&context.fetch_field(0).coerce_to_string()))
+                }
                 None => expression
                     .evaluate(functions, context)
-                    .coercion_to_boolean(),
+                    .map(|value| value.coercion_to_boolean()),
             },
-            Pattern::Begin => false,
-            Pattern::End => false,
+            Pattern::Begin => Printable::wrap(false),
+            Pattern::End => Printable::wrap(false),
         }
     }
 }

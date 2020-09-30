@@ -12,6 +12,7 @@ use super::{Expression, ExpressionParseResult};
 use crate::{
     basic_types::MutableContext,
     function::Functions,
+    printable::Printable,
     value::{NumericValue, Value},
 };
 
@@ -33,19 +34,31 @@ impl Expression for BinaryBoolean {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let left_value = self.left.evaluate(functions, context).coercion_to_boolean();
-        let right_value = self
-            .right
-            .evaluate(functions, context)
-            .coercion_to_boolean();
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        let Printable {
+            value: left_value,
+            output: mut left_output,
+        } = self.left.evaluate(functions, context);
+        let Printable {
+            value: right_value,
+            output: mut right_output,
+        } = self.right.evaluate(functions, context);
+
+        let (left, right) = (
+            left_value.coercion_to_boolean(),
+            right_value.coercion_to_boolean(),
+        );
 
         let result = match &self.operator {
-            Operator::And => left_value && right_value,
-            Operator::Or => left_value || right_value,
+            Operator::And => left && right,
+            Operator::Or => left || right,
         };
         let int_value = if result { 1 } else { 0 };
-        Value::Numeric(NumericValue::Integer(int_value))
+        left_output.append(&mut right_output);
+        Printable {
+            value: Value::Numeric(NumericValue::Integer(int_value)),
+            output: left_output,
+        }
     }
 }
 
@@ -59,13 +72,11 @@ impl Expression for NotBoolean {
         None
     }
 
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
-        let value = self
-            .expression
-            .evaluate(functions, context)
-            .coercion_to_boolean();
-        let int_value = if value { 0 } else { 1 };
-        Value::Numeric(NumericValue::Integer(int_value))
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
+        self.expression.evaluate(functions, context).map(|value| {
+            let int_value = if value.coercion_to_boolean() { 0 } else { 1 };
+            Value::Numeric(NumericValue::Integer(int_value))
+        })
     }
 }
 
@@ -168,21 +179,21 @@ mod tests {
         let result = parser(r#""a" && 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""a" && 0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#""" && 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
@@ -198,28 +209,28 @@ mod tests {
         let result = parser(r#""a" || 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""a" || 0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""" || 1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#""" || 0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
     }
@@ -235,35 +246,35 @@ mod tests {
         let result = parser(r#"!1"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#"!0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#"!"a""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(0)),
         );
 
         let result = parser(r#"!"""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
 
         let result = parser(r#"!!!!!0"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
@@ -279,14 +290,14 @@ mod tests {
         let result = parser(r#""abc""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::String("abc".to_string()),
         );
 
         let result = parser(r#"!!"abc""#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.evaluate(&functions, &mut context),
+            result.unwrap().1.evaluate(&functions, &mut context).value,
             Value::Numeric(NumericValue::Integer(1)),
         );
     }
