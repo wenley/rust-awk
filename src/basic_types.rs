@@ -1,13 +1,12 @@
-use crate::value::Value;
 use regex;
 use std::collections::HashMap;
+
+use crate::value::{Value, UNINITIALIZED_VALUE};
 
 struct Record<'a> {
     full_line: &'a str,
     fields: Vec<&'a str>,
 }
-
-pub(crate) static UNINITIALIZED_VALUE: Value = Value::Uninitialized;
 
 pub(crate) trait VariableStore {
     fn fetch_variable(&self, variable_name: &str) -> Value;

@@ -11,9 +11,10 @@ use std::ops::Index;
 
 use crate::{
     action::{parse_action, Action},
-    basic_types::{MutableContext, StackFrame, UNINITIALIZED_VALUE},
+    basic_types::{MutableContext, StackFrame},
     expression::variable::parse_variable_name,
-    value::Value,
+    printable::Printable,
+    value::{Value, UNINITIALIZED_VALUE},
 };
 
 pub(crate) struct FunctionDefinition {
