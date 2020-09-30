@@ -18,7 +18,7 @@ impl Item {
         functions: &Functions,
         context: &mut MutableContext<'a>,
     ) -> Vec<String> {
-        if self.pattern.matches(functions, context) {
+        if self.pattern.matches(functions, context).value {
             self.action.output_for_line(functions, context).output
         } else {
             vec![]
