@@ -31,11 +31,9 @@ impl Pattern {
                 Some(regex) => {
                     Printable::wrap(regex.is_match(&context.fetch_field(0).coerce_to_string()))
                 }
-                None => Printable::wrap(
-                    expression
-                        .evaluate(functions, context)
-                        .coercion_to_boolean(),
-                ),
+                None => expression
+                    .evaluate(functions, context)
+                    .map(|value| value.coercion_to_boolean()),
             },
             Pattern::Begin => Printable::wrap(false),
             Pattern::End => Printable::wrap(false),
