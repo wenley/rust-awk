@@ -110,7 +110,7 @@ impl ProgramRun {
         self.program
             .items
             .iter()
-            .flat_map(|item: &item::Item| item.output_for_line(functions, &mut context))
+            .flat_map(|item: &item::Item| item.output_for_line(functions, &mut context).output)
             .collect()
     }
 
@@ -121,7 +121,7 @@ impl ProgramRun {
         self.program
             .items
             .iter()
-            .flat_map(|item| item.output_for_begin(functions, variables))
+            .flat_map(|item| item.output_for_begin(functions, variables).output)
             .collect()
     }
 

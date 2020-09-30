@@ -5,6 +5,7 @@ use crate::{
     basic_types::{MutableContext, Variables},
     function::Functions,
     pattern::{parse_item_pattern, Pattern},
+    printable::Printable,
 };
 
 pub(crate) struct Item {
@@ -17,26 +18,30 @@ impl Item {
         &self,
         functions: &Functions,
         context: &mut MutableContext<'a>,
-    ) -> Vec<String> {
-        if self.pattern.matches(functions, context).value {
-            self.action.output_for_line(functions, context).output
-        } else {
-            vec![]
-        }
+    ) -> Printable<()> {
+        self.pattern
+            .matches(functions, context)
+            .and_then(|matched| {
+                if matched {
+                    self.action.output_for_line(functions, context)
+                } else {
+                    Printable::wrap(())
+                }
+            })
     }
 
     pub(crate) fn output_for_begin(
         &self,
         functions: &Functions,
         variables: &mut Variables,
-    ) -> Vec<String> {
+    ) -> Printable<()> {
         if let Pattern::Begin = self.pattern {
             let mut context = MutableContext::for_variables(variables);
             context.set_record_with_line("");
 
-            self.action.output_for_line(functions, &mut context).output
+            self.action.output_for_line(functions, &mut context)
         } else {
-            vec![]
+            Printable::wrap(())
         }
     }
 }
@@ -72,21 +77,33 @@ mod tests {
         let result = parse_item(r#"$1 ~ "hello" { print($0); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.output_for_line(&functions, &mut context),
+            result
+                .unwrap()
+                .1
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["hello world today"],
         );
 
         let result = parse_item(r#"$2 ~ "hello" { print($0); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.output_for_line(&functions, &mut context),
+            result
+                .unwrap()
+                .1
+                .output_for_line(&functions, &mut context)
+                .output,
             empty_string_vec,
         );
 
         let result = parse_item(r#"11 ~ 1 { print($3); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            result.unwrap().1.output_for_line(&functions, &mut context),
+            result
+                .unwrap()
+                .1
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["today"],
         );
     }
