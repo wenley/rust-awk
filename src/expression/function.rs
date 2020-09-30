@@ -9,7 +9,7 @@ use nom::{
 };
 
 use super::{parse_expression, variable::parse_variable_name, Expression, ExpressionParseResult};
-use crate::{basic_types::MutableContext, function::Functions, value::Value};
+use crate::{basic_types::MutableContext, function::Functions, printable::Printable, value::Value};
 
 #[derive(Debug)]
 struct FunctionCall {
@@ -18,22 +18,25 @@ struct FunctionCall {
 }
 
 impl Expression for FunctionCall {
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Value {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<Value> {
         let function = match functions.get(&self.name) {
             Some(func) => func,
             None => panic!("Could not find function with name {}", self.name),
         };
-        let values: Vec<Value> = self
-            .arguments
+
+        self.arguments
             .iter()
-            .map(|exp| exp.evaluate(functions, context))
-            .collect();
-
-        // TODO: Capture this output
-        function.invoke_with(values, functions, context);
-
-        // TODO: Actually return a proper return value
-        Value::String("".to_string())
+            .fold(Printable::wrap(vec![]), |printable, argument| {
+                printable.and_then(|vec| {
+                    let Printable { value: v, output } = argument.evaluate(functions, context);
+                    vec.push(v);
+                    Printable {
+                        value: vec,
+                        output: output,
+                    }
+                })
+            })
+            .and_then(|values| function.invoke_with(values, functions, context))
     }
 
     fn regex<'a>(&'a self) -> Option<&'a Regex> {

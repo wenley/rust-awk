@@ -55,6 +55,7 @@ impl FunctionDefinition {
         // expression (having a nestable value)
         context
             .with_stack_frame(frame, |c| self.body.output_for_line(functions, c))
+            // TODO: Actually return a proper return value
             .and_then(|_| Printable::wrap(UNINITIALIZED_VALUE.clone()))
     }
 }
