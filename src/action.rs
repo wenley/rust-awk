@@ -13,6 +13,7 @@ use crate::{
     expression::{parse_assignable, parse_expression, Assign, Expression},
     function::Functions,
     printable::Printable,
+    value::UNINITIALIZED_VALUE,
 };
 
 #[derive(Debug)]
@@ -72,61 +73,61 @@ enum Statement {
 impl Statement {
     fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()> {
         match self {
-            Statement::Print(expressions) => {
-                let output_line = expressions
-                    .iter()
-                    .map(|e| e.evaluate(functions, context).coerce_to_string())
-                    .collect::<Vec<String>>()
-                    .join(" ");
-                Printable {
+            Statement::Print(expressions) => expressions
+                .iter()
+                .fold(Printable::wrap(vec![]), |result, e| {
+                    result.and_then(|mut vec| {
+                        e.evaluate(functions, context).map(|value| {
+                            vec.push(value.coerce_to_string());
+                            vec
+                        })
+                    })
+                })
+                .and_then(|strings| Printable {
                     value: (),
-                    output: vec![output_line],
-                }
-            }
+                    output: vec![strings.join(" ")],
+                }),
             Statement::IfElse {
                 condition,
                 if_branch,
                 else_branch,
-            } => {
-                let result = condition.evaluate(functions, context).coercion_to_boolean();
-                if result {
+            } => condition.evaluate(functions, context).and_then(|value| {
+                if value.coercion_to_boolean() {
                     if_branch.output_for_line(functions, context)
                 } else {
                     else_branch.output_for_line(functions, context)
                 }
-            }
+            }),
             Statement::Assign { assignable, value } => {
-                // TODO: Check for function / variable name collision
-                let value = value.evaluate(functions, context);
-                assignable.assign(functions, context, value);
-                Printable {
-                    value: (),
-                    output: vec![],
-                }
+                value.evaluate(functions, context).map(|value| {
+                    assignable.assign(functions, context, value);
+                    ()
+                })
             }
             Statement::While { condition, body } => {
-                let mut value = condition.evaluate(functions, context);
-                let mut result = Printable::wrap(());
+                let mut result = condition.evaluate(functions, context);
                 loop {
-                    if value.coercion_to_boolean() {
-                        result = result.and_then(|_| body.output_for_line(functions, context));
-                        value = condition.evaluate(functions, context);
+                    if result.value.coercion_to_boolean() {
+                        result = result
+                            .and_then(|_| body.output_for_line(functions, context))
+                            .and_then(|_| condition.evaluate(functions, context));
                     } else {
                         break;
                     }
                 }
-                result
+                result.map(|_| ())
             }
             Statement::DoWhile { body, condition } => {
-                let mut result = Printable::wrap(());
+                let mut result = Printable::wrap(UNINITIALIZED_VALUE.clone());
                 loop {
-                    result = result.and_then(|_| body.output_for_line(functions, context));
-                    let value = condition.evaluate(functions, context);
-                    if !value.coercion_to_boolean() {
+                    result = result
+                        .and_then(|_| body.output_for_line(functions, context))
+                        .and_then(|_| condition.evaluate(functions, context));
+                    if !result.value.coercion_to_boolean() {
                         break;
                     }
                 }
-                result
+                result.map(|_| ())
             }
         }
     }
