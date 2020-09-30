@@ -1,9 +1,9 @@
 //
 // Proper Monad implementing the monadic laws
 //
-struct Printable<T> {
-    value: T,
-    output: Vec<String>,
+pub(crate) struct Printable<T> {
+    pub(crate) value: T,
+    pub(crate) output: Vec<String>,
 }
 
 impl<T> Printable<T> {
@@ -29,5 +29,9 @@ impl<T> Printable<T> {
             value: new_value,
             output: output,
         }
+    }
+
+    pub(crate) fn append(&mut self, more_output: &mut Vec<String>) {
+        self.output.append(more_output);
     }
 }

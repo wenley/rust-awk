@@ -19,7 +19,7 @@ impl Item {
         context: &mut MutableContext<'a>,
     ) -> Vec<String> {
         if self.pattern.matches(functions, context) {
-            self.action.output_for_line(functions, context)
+            self.action.output_for_line(functions, context).output
         } else {
             vec![]
         }
@@ -34,7 +34,7 @@ impl Item {
             let mut context = MutableContext::for_variables(variables);
             context.set_record_with_line("");
 
-            self.action.output_for_line(functions, &mut context)
+            self.action.output_for_line(functions, &mut context).output
         } else {
             vec![]
         }

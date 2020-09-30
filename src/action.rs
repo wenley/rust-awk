@@ -12,6 +12,7 @@ use crate::{
     basic_types::MutableContext,
     expression::{parse_assignable, parse_expression, Assign, Expression},
     function::Functions,
+    printable::Printable,
 };
 
 #[derive(Debug)]
@@ -24,11 +25,15 @@ impl Action {
         &self,
         functions: &Functions,
         context: &mut MutableContext,
-    ) -> Vec<String> {
-        self.statements
-            .iter()
-            .flat_map(|statement| statement.evaluate(functions, context))
-            .collect()
+    ) -> Printable<()> {
+        Printable {
+            value: (),
+            output: self
+                .statements
+                .iter()
+                .flat_map(|statement| statement.evaluate(functions, context).output)
+                .collect(),
+        }
     }
 }
 
@@ -68,7 +73,7 @@ enum Statement {
 }
 
 impl Statement {
-    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Vec<String> {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()> {
         match self {
             Statement::Print(expressions) => {
                 let output_line = expressions
@@ -76,7 +81,10 @@ impl Statement {
                     .map(|e| e.evaluate(functions, context).coerce_to_string())
                     .collect::<Vec<String>>()
                     .join(" ");
-                vec![output_line]
+                Printable {
+                    value: (),
+                    output: vec![output_line],
+                }
             }
             Statement::IfElse {
                 condition,
@@ -94,31 +102,34 @@ impl Statement {
                 // TODO: Check for function / variable name collision
                 let value = value.evaluate(functions, context);
                 assignable.assign(functions, context, value);
-                vec![]
+                Printable {
+                    value: (),
+                    output: vec![],
+                }
             }
             Statement::While { condition, body } => {
                 let mut value = condition.evaluate(functions, context);
-                let mut output = vec![];
+                let mut result = Printable::wrap(());
                 loop {
                     if value.coercion_to_boolean() {
-                        output.append(&mut body.output_for_line(functions, context));
+                        result.append(&mut body.output_for_line(functions, context).output);
                         value = condition.evaluate(functions, context);
                     } else {
                         break;
                     }
                 }
-                output
+                result
             }
             Statement::DoWhile { body, condition } => {
-                let mut output = vec![];
+                let mut result = Printable::wrap(());
                 loop {
-                    output.append(&mut body.output_for_line(functions, context));
+                    result.append(&mut body.output_for_line(functions, context).output);
                     let value = condition.evaluate(functions, context);
                     if !value.coercion_to_boolean() {
                         break;
                     }
                 }
-                output
+                result
             }
         }
     }
@@ -261,7 +272,9 @@ mod tests {
 
         let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
         assert_eq!(
-            print_action.output_for_line(&functions, &mut context),
+            print_action
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["hello"],
         );
     }
@@ -284,7 +297,9 @@ mod tests {
         .unwrap()
         .1;
         assert_eq!(
-            if_conditional.output_for_line(&functions, &mut context),
+            if_conditional
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["if-branch"],
         );
 
@@ -300,7 +315,9 @@ mod tests {
         .unwrap()
         .1;
         assert_eq!(
-            else_conditional.output_for_line(&functions, &mut context),
+            else_conditional
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["else"],
         );
     }
@@ -337,7 +354,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["hello"],
         );
 
@@ -352,7 +370,8 @@ mod tests {
             Action {
                 statements: result.unwrap().1
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["1", "2 extra arg", "hello",],
         );
     }
@@ -373,7 +392,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["hello"],
         );
     }
@@ -395,7 +415,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             empty_vec,
         );
     }
@@ -416,7 +437,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             vec!["hello"],
         );
     }
@@ -433,7 +455,8 @@ mod tests {
             Action {
                 statements: vec![result.unwrap().1]
             }
-            .output_for_line(&functions, &mut context),
+            .output_for_line(&functions, &mut context)
+            .output,
             empty_vec,
         );
     }
