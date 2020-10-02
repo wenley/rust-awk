@@ -10,12 +10,13 @@ use nom::{
 
 use crate::{
     basic_types::MutableContext,
-    expression::{parse_assignable, parse_expression, Assign, Expression},
+    expression::{parse_expression, Expression},
     function::Functions,
     printable::Printable,
     value::UNINITIALIZED_VALUE,
 };
 
+mod assign;
 mod if_else;
 
 pub(crate) struct Action {
@@ -55,10 +56,6 @@ trait Statement {
 
 enum StatementEnum {
     Print(Vec<Box<dyn Expression>>),
-    Assign {
-        assignable: Box<dyn Assign>,
-        value: Box<dyn Expression>,
-    },
     While {
         condition: Box<dyn Expression>,
         body: Action,
@@ -86,12 +83,6 @@ impl Statement for StatementEnum {
                     value: (),
                     output: vec![strings.join(" ")],
                 }),
-            StatementEnum::Assign { assignable, value } => {
-                value.evaluate(functions, context).map(|value| {
-                    assignable.assign(functions, context, value);
-                    ()
-                })
-            }
             StatementEnum::While { condition, body } => {
                 let mut result = condition.evaluate(functions, context);
                 loop {
@@ -135,7 +126,7 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
         if_else::parse_if_else_statement,
         parse_while_statement,
         parse_do_while_statement,
-        parse_assign_statement,
+        assign::parse_assign_statement,
     ))(input)
 }
 
@@ -190,30 +181,11 @@ fn parse_do_while_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
     ))
 }
 
-fn parse_assign_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
-    let (i, (assignable, _, _, _, value_expression)) = tuple((
-        parse_assignable,
-        multispace0,
-        one_of("="),
-        multispace0,
-        parse_expression,
-    ))(input)?;
-
-    Result::Ok((
-        i,
-        Box::new(StatementEnum::Assign {
-            assignable: assignable,
-            value: value_expression,
-        }),
-    ))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::{VariableStore, Variables};
+    use crate::basic_types::{Variables};
     use crate::function::Functions;
-    use crate::value::{NumericValue, Value};
     use std::collections::HashMap;
 
     fn empty_functions_and_variables() -> (Functions, Variables) {
@@ -233,26 +205,6 @@ mod tests {
                 .output_for_line(&functions, &mut context)
                 .output,
             vec!["hello"],
-        );
-    }
-
-    #[test]
-    fn assignment_updates_variables() {
-        let (functions, mut variables) = empty_functions_and_variables();
-        let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
-        let assign_action = parse_action(
-            r#"{
-            foo = 1 + 2;
-        }"#,
-        )
-        .unwrap()
-        .1;
-        assign_action.output_for_line(&functions, &mut context);
-        assert_eq!(
-            context.fetch_variable("foo"),
-            Value::Numeric(NumericValue::Integer(3)),
         );
     }
 
@@ -332,24 +284,6 @@ mod tests {
             .output_for_line(&functions, &mut context)
             .output,
             vec!["hello"],
-        );
-    }
-    #[test]
-    fn test_parse_assign_statement() {
-        let (functions, mut variables) = empty_functions_and_variables();
-        let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
-        let result = parse_simple_statement(r#"variable = "hi""#);
-        let empty_vec: Vec<&'static str> = vec![];
-        assert!(result.is_ok());
-        assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
-            empty_vec,
         );
     }
 
