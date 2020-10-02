@@ -59,9 +59,7 @@ pub(super) fn parse_while_statement(input: &str) -> IResult<&str, Box<dyn Statem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::action::parse_simple_statement;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
+    use crate::{basic_types::Variables, function::Functions};
     use std::collections::HashMap;
 
     fn empty_functions_and_variables() -> (Functions, Variables) {
@@ -75,7 +73,7 @@ mod tests {
         let mut context = MutableContext::for_variables(&mut variables);
         context.set_record_with_line("");
 
-        let result = parse_simple_statement(
+        let result = parse_while_statement(
             r#"while (0) {
                 print("hello");
             }"#,
@@ -83,11 +81,7 @@ mod tests {
         let empty_vec: Vec<&'static str> = vec![];
         assert!(result.is_ok());
         assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
+            result.unwrap().1.evaluate(&functions, &mut context).output,
             empty_vec,
         );
     }
