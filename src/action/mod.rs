@@ -18,6 +18,7 @@ use crate::{
 
 mod assign;
 mod if_else;
+mod while_statement;
 
 pub(crate) struct Action {
     statements: Vec<Box<dyn Statement>>,
@@ -56,10 +57,6 @@ trait Statement {
 
 enum StatementEnum {
     Print(Vec<Box<dyn Expression>>),
-    While {
-        condition: Box<dyn Expression>,
-        body: Action,
-    },
     DoWhile {
         body: Action,
         condition: Box<dyn Expression>,
@@ -83,19 +80,6 @@ impl Statement for StatementEnum {
                     value: (),
                     output: vec![strings.join(" ")],
                 }),
-            StatementEnum::While { condition, body } => {
-                let mut result = condition.evaluate(functions, context);
-                loop {
-                    if result.value.coercion_to_boolean() {
-                        result = result
-                            .and_then(|_| body.output_for_line(functions, context))
-                            .and_then(|_| condition.evaluate(functions, context));
-                    } else {
-                        break;
-                    }
-                }
-                result.map(|_| ())
-            }
             StatementEnum::DoWhile { body, condition } => {
                 let mut result = Printable::wrap(UNINITIALIZED_VALUE.clone());
                 loop {
@@ -124,7 +108,7 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
     alt((
         parse_print_statement,
         if_else::parse_if_else_statement,
-        parse_while_statement,
+        while_statement::parse_while_statement,
         parse_do_while_statement,
         assign::parse_assign_statement,
     ))(input)
@@ -136,28 +120,6 @@ fn parse_print_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
 
     let (i, exprs) = delimited(tag("print("), parse_expression_list, one_of(")"))(input)?;
     Result::Ok((i, Box::new(StatementEnum::Print(exprs))))
-}
-
-fn parse_while_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
-    let (i, (_, _, _, _, condition, _, _, _, body)) = tuple((
-        tag("while"),
-        multispace0,
-        one_of("("),
-        multispace0,
-        parse_expression,
-        multispace0,
-        one_of(")"),
-        multispace0,
-        parse_action,
-    ))(input)?;
-
-    Result::Ok((
-        i,
-        Box::new(StatementEnum::While {
-            condition: condition,
-            body: body,
-        }),
-    ))
 }
 
 fn parse_do_while_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
@@ -239,29 +201,6 @@ mod tests {
             .output_for_line(&functions, &mut context)
             .output,
             vec!["1", "2 extra arg", "hello",],
-        );
-    }
-
-    #[test]
-    fn test_parse_while_statement() {
-        let (functions, mut variables) = empty_functions_and_variables();
-        let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
-        let result = parse_simple_statement(
-            r#"while (0) {
-                print("hello");
-            }"#,
-        );
-        let empty_vec: Vec<&'static str> = vec![];
-        assert!(result.is_ok());
-        assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
-            empty_vec,
         );
     }
 
