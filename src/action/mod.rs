@@ -48,6 +48,10 @@ pub(crate) fn parse_action(input: &str) -> IResult<&str, Action> {
     )(input)
 }
 
+trait StateTraitMent {
+    fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()>;
+}
+
 #[derive(Debug)]
 enum Statement {
     IfElse {
@@ -70,7 +74,7 @@ enum Statement {
     },
 }
 
-impl Statement {
+impl StateTraitMent for Statement {
     fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()> {
         match self {
             Statement::Print(expressions) => expressions
