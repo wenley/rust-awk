@@ -50,7 +50,7 @@ impl FunctionDefinition {
         }
 
         // TODO: Make Functions expressions too
-        // Right now, a function can only be invoked as a Statement with printable outputs.
+        // Right now, a function can only be invoked as a StatementEnum with printable outputs.
         // In the future, a function will need to be both a "statement" (returning outputs) AND an
         // expression (having a nestable value)
         context

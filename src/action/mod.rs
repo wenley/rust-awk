@@ -18,7 +18,7 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct Action {
-    statements: Vec<Statement>,
+    statements: Vec<StatementEnum>,
 }
 
 impl Action {
@@ -53,7 +53,7 @@ trait StateTraitMent {
 }
 
 #[derive(Debug)]
-enum Statement {
+enum StatementEnum {
     IfElse {
         condition: Box<dyn Expression>,
         if_branch: Action,
@@ -74,10 +74,10 @@ enum Statement {
     },
 }
 
-impl StateTraitMent for Statement {
+impl StateTraitMent for StatementEnum {
     fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()> {
         match self {
-            Statement::Print(expressions) => expressions
+            StatementEnum::Print(expressions) => expressions
                 .iter()
                 .fold(Printable::wrap(vec![]), |result, e| {
                     result.and_then(|mut vec| {
@@ -91,7 +91,7 @@ impl StateTraitMent for Statement {
                     value: (),
                     output: vec![strings.join(" ")],
                 }),
-            Statement::IfElse {
+            StatementEnum::IfElse {
                 condition,
                 if_branch,
                 else_branch,
@@ -102,13 +102,13 @@ impl StateTraitMent for Statement {
                     else_branch.output_for_line(functions, context)
                 }
             }),
-            Statement::Assign { assignable, value } => {
+            StatementEnum::Assign { assignable, value } => {
                 value.evaluate(functions, context).map(|value| {
                     assignable.assign(functions, context, value);
                     ()
                 })
             }
-            Statement::While { condition, body } => {
+            StatementEnum::While { condition, body } => {
                 let mut result = condition.evaluate(functions, context);
                 loop {
                     if result.value.coercion_to_boolean() {
@@ -121,7 +121,7 @@ impl StateTraitMent for Statement {
                 }
                 result.map(|_| ())
             }
-            Statement::DoWhile { body, condition } => {
+            StatementEnum::DoWhile { body, condition } => {
                 let mut result = Printable::wrap(UNINITIALIZED_VALUE.clone());
                 loop {
                     result = result
@@ -137,7 +137,7 @@ impl StateTraitMent for Statement {
     }
 }
 
-fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
+fn parse_statements(input: &str) -> IResult<&str, Vec<StatementEnum>> {
     let parse_single_statement = terminated(
         parse_simple_statement,
         tuple((multispace0, one_of(";"), multispace0)),
@@ -145,27 +145,27 @@ fn parse_statements(input: &str) -> IResult<&str, Vec<Statement>> {
     many0(parse_single_statement)(input)
 }
 
-fn parse_simple_statement(input: &str) -> IResult<&str, Statement> {
+fn parse_simple_statement(input: &str) -> IResult<&str, StatementEnum> {
     alt((
         parse_print_statement,
         parse_if_else_statement,
         parse_while_statement,
         parse_do_while_statement,
         parse_assign_statement,
-        map(parse_expression, move |expr| Statement::Print(vec![expr])),
+        map(parse_expression, move |expr| StatementEnum::Print(vec![expr])),
     ))(input)
 }
 
-fn parse_print_statement(input: &str) -> IResult<&str, Statement> {
+fn parse_print_statement(input: &str) -> IResult<&str, StatementEnum> {
     let parse_separator = delimited(multispace0, one_of(","), multispace0);
     let parse_expression_list = separated_list(parse_separator, parse_expression);
     map(
         delimited(tag("print("), parse_expression_list, one_of(")")),
-        move |exprs| Statement::Print(exprs),
+        move |exprs| StatementEnum::Print(exprs),
     )(input)
 }
 
-fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
+fn parse_if_else_statement(input: &str) -> IResult<&str, StatementEnum> {
     let parse_if = map(
         tuple((
             tag("if"),
@@ -189,7 +189,7 @@ fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
             multispace0,
             parse_action,
         )),
-        move |(condition, _, if_branch, _, _, _, else_branch)| Statement::IfElse {
+        move |(condition, _, if_branch, _, _, _, else_branch)| StatementEnum::IfElse {
             condition: condition,
             if_branch: if_branch,
             else_branch: else_branch,
@@ -197,7 +197,7 @@ fn parse_if_else_statement(input: &str) -> IResult<&str, Statement> {
     )(input)
 }
 
-fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
+fn parse_while_statement(input: &str) -> IResult<&str, StatementEnum> {
     map(
         tuple((
             tag("while"),
@@ -210,14 +210,14 @@ fn parse_while_statement(input: &str) -> IResult<&str, Statement> {
             multispace0,
             parse_action,
         )),
-        move |(_, _, _, _, condition, _, _, _, body)| Statement::While {
+        move |(_, _, _, _, condition, _, _, _, body)| StatementEnum::While {
             condition: condition,
             body: body,
         },
     )(input)
 }
 
-fn parse_do_while_statement(input: &str) -> IResult<&str, Statement> {
+fn parse_do_while_statement(input: &str) -> IResult<&str, StatementEnum> {
     map(
         tuple((
             tag("do"),
@@ -230,14 +230,14 @@ fn parse_do_while_statement(input: &str) -> IResult<&str, Statement> {
             parse_expression,
             one_of(")"),
         )),
-        |(_, _, body, _, _, _, _, condition, _)| Statement::DoWhile {
+        |(_, _, body, _, _, _, _, condition, _)| StatementEnum::DoWhile {
             body: body,
             condition: condition,
         },
     )(input)
 }
 
-fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
+fn parse_assign_statement(input: &str) -> IResult<&str, StatementEnum> {
     map(
         tuple((
             parse_assignable,
@@ -246,7 +246,7 @@ fn parse_assign_statement(input: &str) -> IResult<&str, Statement> {
             multispace0,
             parse_expression,
         )),
-        |(assignable, _, _, _, value_expression)| Statement::Assign {
+        |(assignable, _, _, _, value_expression)| StatementEnum::Assign {
             assignable: assignable,
             value: value_expression,
         },
