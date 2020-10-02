@@ -48,7 +48,7 @@ pub(crate) fn parse_action(input: &str) -> IResult<&str, Action> {
     )(input)
 }
 
-trait StateTraitMent {
+trait Statement {
     fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()>;
 }
 
@@ -74,7 +74,7 @@ enum StatementEnum {
     },
 }
 
-impl StateTraitMent for StatementEnum {
+impl Statement for StatementEnum {
     fn evaluate(&self, functions: &Functions, context: &mut MutableContext) -> Printable<()> {
         match self {
             StatementEnum::Print(expressions) => expressions
