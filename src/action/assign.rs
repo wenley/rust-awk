@@ -4,14 +4,13 @@ use nom::{
     IResult,
 };
 
+use super::Statement;
 use crate::{
     basic_types::MutableContext,
     expression::{parse_assignable, parse_expression, Assign, Expression},
     function::Functions,
     printable::Printable,
 };
-
-use super::Statement;
 
 struct AssignStatement {
     assignable: Box<dyn Assign>,
@@ -48,10 +47,11 @@ pub(super) fn parse_assign_statement(input: &str) -> IResult<&str, Box<dyn State
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::action::{parse_action, parse_simple_statement, Action};
-    use crate::basic_types::{VariableStore, Variables};
-    use crate::function::Functions;
-    use crate::value::{NumericValue, Value};
+    use crate::{
+        basic_types::{VariableStore, Variables},
+        function::Functions,
+        value::{NumericValue, Value},
+    };
     use std::collections::HashMap;
 
     fn empty_functions_and_variables() -> (Functions, Variables) {
@@ -65,14 +65,8 @@ mod tests {
         let mut context = MutableContext::for_variables(&mut variables);
         context.set_record_with_line("");
 
-        let assign_action = parse_action(
-            r#"{
-            foo = 1 + 2;
-        }"#,
-        )
-        .unwrap()
-        .1;
-        assign_action.output_for_line(&functions, &mut context);
+        let assign_statement = parse_assign_statement(r#"foo = 1 + 2"#).unwrap().1;
+        assign_statement.evaluate(&functions, &mut context);
         assert_eq!(
             context.fetch_variable("foo"),
             Value::Numeric(NumericValue::Integer(3)),
@@ -85,15 +79,11 @@ mod tests {
         let mut context = MutableContext::for_variables(&mut variables);
         context.set_record_with_line("");
 
-        let result = parse_simple_statement(r#"variable = "hi""#);
+        let result = parse_assign_statement(r#"variable = "hi""#);
         let empty_vec: Vec<&'static str> = vec![];
         assert!(result.is_ok());
         assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
+            result.unwrap().1.evaluate(&functions, &mut context).output,
             empty_vec,
         );
     }
