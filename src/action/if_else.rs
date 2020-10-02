@@ -70,8 +70,7 @@ pub(super) fn parse_if_else_statement(input: &str) -> IResult<&str, Box<dyn Stat
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
+    use crate::{basic_types::Variables, function::Functions};
     use std::collections::HashMap;
 
     fn empty_functions_and_variables() -> (Functions, Variables) {
@@ -85,39 +84,31 @@ mod tests {
         let mut context = MutableContext::for_variables(&mut empty_variables);
         context.set_record_with_line("");
 
-        let if_conditional = parse_action(
-            r#"{
-            if ("not empty") {
+        let if_conditional = parse_if_else_statement(
+            r#"if ("not empty") {
                 print("if-branch");
             } else {
                 print("else");
-            };
-        }"#,
+            }"#,
         )
         .unwrap()
         .1;
         assert_eq!(
-            if_conditional
-                .output_for_line(&functions, &mut context)
-                .output,
+            if_conditional.evaluate(&functions, &mut context).output,
             vec!["if-branch"],
         );
 
-        let else_conditional = parse_action(
-            r#"{
-            if ("") {
+        let else_conditional = parse_if_else_statement(
+            r#"if ("") {
                 print("if-branch");
             } else {
                 print("else");
-            };
-        }"#,
+            }"#,
         )
         .unwrap()
         .1;
         assert_eq!(
-            else_conditional
-                .output_for_line(&functions, &mut context)
-                .output,
+            else_conditional.evaluate(&functions, &mut context).output,
             vec!["else"],
         );
     }
