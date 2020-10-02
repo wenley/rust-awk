@@ -13,10 +13,10 @@ use crate::{
     expression::{parse_expression, Expression},
     function::Functions,
     printable::Printable,
-    value::UNINITIALIZED_VALUE,
 };
 
 mod assign;
+mod do_while;
 mod if_else;
 mod while_statement;
 
@@ -57,10 +57,6 @@ trait Statement {
 
 enum StatementEnum {
     Print(Vec<Box<dyn Expression>>),
-    DoWhile {
-        body: Action,
-        condition: Box<dyn Expression>,
-    },
 }
 
 impl Statement for StatementEnum {
@@ -80,18 +76,6 @@ impl Statement for StatementEnum {
                     value: (),
                     output: vec![strings.join(" ")],
                 }),
-            StatementEnum::DoWhile { body, condition } => {
-                let mut result = Printable::wrap(UNINITIALIZED_VALUE.clone());
-                loop {
-                    result = result
-                        .and_then(|_| body.output_for_line(functions, context))
-                        .and_then(|_| condition.evaluate(functions, context));
-                    if !result.value.coercion_to_boolean() {
-                        break;
-                    }
-                }
-                result.map(|_| ())
-            }
         }
     }
 }
@@ -109,7 +93,7 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
         parse_print_statement,
         if_else::parse_if_else_statement,
         while_statement::parse_while_statement,
-        parse_do_while_statement,
+        do_while::parse_do_while_statement,
         assign::parse_assign_statement,
     ))(input)
 }
@@ -122,31 +106,10 @@ fn parse_print_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
     Result::Ok((i, Box::new(StatementEnum::Print(exprs))))
 }
 
-fn parse_do_while_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
-    let (i, (_, _, body, _, _, _, _, condition, _)) = tuple((
-        tag("do"),
-        multispace0,
-        parse_action,
-        multispace0,
-        tag("while"),
-        multispace0,
-        one_of("("),
-        parse_expression,
-        one_of(")"),
-    ))(input)?;
-    Result::Ok((
-        i,
-        Box::new(StatementEnum::DoWhile {
-            body: body,
-            condition: condition,
-        }),
-    ))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::{Variables};
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
@@ -201,28 +164,6 @@ mod tests {
             .output_for_line(&functions, &mut context)
             .output,
             vec!["1", "2 extra arg", "hello",],
-        );
-    }
-
-    #[test]
-    fn test_parse_do_while_statement() {
-        let (functions, mut variables) = empty_functions_and_variables();
-        let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
-        let result = parse_simple_statement(
-            r#"do {
-                print("hello");
-            } while (0)"#,
-        );
-        assert!(result.is_ok());
-        assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
-            vec!["hello"],
         );
     }
 
