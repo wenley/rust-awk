@@ -16,6 +16,8 @@ use crate::{
     value::UNINITIALIZED_VALUE,
 };
 
+mod if_else;
+
 pub(crate) struct Action {
     statements: Vec<Box<dyn Statement>>,
 }
@@ -52,11 +54,6 @@ trait Statement {
 }
 
 enum StatementEnum {
-    IfElse {
-        condition: Box<dyn Expression>,
-        if_branch: Action,
-        else_branch: Action,
-    },
     Print(Vec<Box<dyn Expression>>),
     Assign {
         assignable: Box<dyn Assign>,
@@ -89,17 +86,6 @@ impl Statement for StatementEnum {
                     value: (),
                     output: vec![strings.join(" ")],
                 }),
-            StatementEnum::IfElse {
-                condition,
-                if_branch,
-                else_branch,
-            } => condition.evaluate(functions, context).and_then(|value| {
-                if value.coercion_to_boolean() {
-                    if_branch.output_for_line(functions, context)
-                } else {
-                    else_branch.output_for_line(functions, context)
-                }
-            }),
             StatementEnum::Assign { assignable, value } => {
                 value.evaluate(functions, context).map(|value| {
                     assignable.assign(functions, context, value);
@@ -146,7 +132,7 @@ fn parse_statements(input: &str) -> IResult<&str, Vec<Box<dyn Statement>>> {
 fn parse_simple_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
     alt((
         parse_print_statement,
-        parse_if_else_statement,
+        if_else::parse_if_else_statement,
         parse_while_statement,
         parse_do_while_statement,
         parse_assign_statement,
@@ -159,39 +145,6 @@ fn parse_print_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
 
     let (i, exprs) = delimited(tag("print("), parse_expression_list, one_of(")"))(input)?;
     Result::Ok((i, Box::new(StatementEnum::Print(exprs))))
-}
-
-fn parse_if_else_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
-    let parse_if = map(
-        tuple((
-            tag("if"),
-            multispace0,
-            one_of("("),
-            multispace0,
-            parse_expression,
-            multispace0,
-            one_of(")"),
-        )),
-        |(_, _, _, _, expression, _, _)| expression,
-    );
-
-    let (i, (condition, _, if_branch, _, _, _, else_branch)) = tuple((
-        parse_if,
-        multispace0,
-        parse_action,
-        multispace0,
-        tag("else"),
-        multispace0,
-        parse_action,
-    ))(input)?;
-    Result::Ok((
-        i,
-        Box::new(StatementEnum::IfElse {
-            condition: condition,
-            if_branch: if_branch,
-            else_branch: else_branch,
-        }),
-    ))
 }
 
 fn parse_while_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
@@ -284,49 +237,6 @@ mod tests {
     }
 
     #[test]
-    fn if_produces_correct_value() {
-        let (functions, mut empty_variables) = empty_functions_and_variables();
-        let mut context = MutableContext::for_variables(&mut empty_variables);
-        context.set_record_with_line("");
-
-        let if_conditional = parse_action(
-            r#"{
-            if ("not empty") {
-                print("if-branch");
-            } else {
-                print("else");
-            };
-        }"#,
-        )
-        .unwrap()
-        .1;
-        assert_eq!(
-            if_conditional
-                .output_for_line(&functions, &mut context)
-                .output,
-            vec!["if-branch"],
-        );
-
-        let else_conditional = parse_action(
-            r#"{
-            if ("") {
-                print("if-branch");
-            } else {
-                print("else");
-            };
-        }"#,
-        )
-        .unwrap()
-        .1;
-        assert_eq!(
-            else_conditional
-                .output_for_line(&functions, &mut context)
-                .output,
-            vec!["else"],
-        );
-    }
-
-    #[test]
     fn assignment_updates_variables() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
@@ -377,28 +287,6 @@ mod tests {
             .output_for_line(&functions, &mut context)
             .output,
             vec!["1", "2 extra arg", "hello",],
-        );
-    }
-
-    #[test]
-    fn test_parse_if_else_statement() {
-        let (functions, mut variables) = empty_functions_and_variables();
-        let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
-        let result = parse_simple_statement(
-            r#"if (1) {
-            print("hello");
-        } else {}"#,
-        );
-        assert!(result.is_ok());
-        assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
-            vec!["hello"],
         );
     }
 
