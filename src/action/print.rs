@@ -48,9 +48,7 @@ pub(super) fn parse_print_statement(input: &str) -> IResult<&str, Box<dyn Statem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::action::parse_action;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
+    use crate::{basic_types::Variables, function::Functions};
     use std::collections::HashMap;
 
     fn empty_functions_and_variables() -> (Functions, Variables) {
@@ -64,11 +62,9 @@ mod tests {
         let mut context = MutableContext::for_variables(&mut empty_variables);
         context.set_record_with_line("");
 
-        let print_action = parse_action(r#"{ print("hello"); }"#).unwrap().1;
+        let print_statement = parse_print_statement(r#"print("hello")"#).unwrap().1;
         assert_eq!(
-            print_action
-                .output_for_line(&functions, &mut context)
-                .output,
+            print_statement.evaluate(&functions, &mut context).output,
             vec!["hello"],
         );
     }
