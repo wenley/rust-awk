@@ -87,4 +87,12 @@ mod tests {
             empty_vec,
         );
     }
+
+    #[test]
+    fn test_assign_from_function() {
+        let result = parse_assign_statement(r#"variable = hello("hi")"#);
+        assert!(result.is_ok());
+        let (remaining, _statement) = result.unwrap();
+        assert_eq!(remaining, "");
+    }
 }
