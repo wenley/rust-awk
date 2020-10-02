@@ -81,35 +81,36 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_statements() {
+    fn test_parse_action() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
         context.set_record_with_line("");
 
-        let result = print::parse_print_statement(r#"print("hello")"#);
+        let result = parse_action(r#"{ print("hello"); }"#);
         assert!(result.is_ok());
         assert_eq!(
-            Action {
-                statements: vec![result.unwrap().1]
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
+            result
+                .unwrap()
+                .1
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["hello"],
         );
 
-        let result = parse_statements(
-            r#"print(1);
+        let result = parse_action(
+            r#"{
+            print(1);
             print(2.0   ,    "extra arg");
             print("hello");
-        "#,
+        }"#,
         );
         assert!(result.is_ok());
         assert_eq!(
-            Action {
-                statements: result.unwrap().1
-            }
-            .output_for_line(&functions, &mut context)
-            .output,
+            result
+                .unwrap()
+                .1
+                .output_for_line(&functions, &mut context)
+                .output,
             vec!["1", "2 extra arg", "hello",],
         );
     }
