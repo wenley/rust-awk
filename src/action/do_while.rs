@@ -70,7 +70,6 @@ mod tests {
     fn test_parse_do_while_statement() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_do_while_statement(
             r#"do {

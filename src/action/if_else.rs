@@ -82,7 +82,6 @@ mod tests {
     fn if_produces_correct_value() {
         let (functions, mut empty_variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut empty_variables);
-        context.set_record_with_line("");
 
         let if_conditional = parse_if_else_statement(
             r#"if ("not empty") {
@@ -117,7 +116,6 @@ mod tests {
     fn test_parse_if_else_statement() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_if_else_statement(
             r#"if (1) {

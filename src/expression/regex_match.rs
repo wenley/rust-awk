@@ -111,8 +111,6 @@ mod tests {
     fn test_regex_match() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = regex_parser(addition_parser(parse_literal));
 
         let result = parser("1 ~ 2");

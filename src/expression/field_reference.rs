@@ -85,8 +85,6 @@ mod tests {
     fn test_parse_field_reference() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = field_reference_parser(parse_literal);
 
         let result = parser("$1");

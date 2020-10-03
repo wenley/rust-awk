@@ -27,34 +27,33 @@ pub(crate) struct Variables {
 
 pub(crate) struct MutableContext<'a> {
     variables: &'a mut Variables,
-    record: Option<Record<'a>>,
+    record: Record<'a>,
 }
 
 impl<'a> MutableContext<'a> {
     pub(crate) fn fetch_field(&self, index: i64) -> Value {
-        match &self.record {
-            None => Value::String("".to_string()),
-            Some(record) => match index {
-                i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
-                i if i == 0 => Value::String(record.full_line.to_string()),
-                i => record
-                    .fields
-                    .get((i - 1) as usize)
-                    .map(|s| Value::String(s.to_string()))
-                    .unwrap_or(Value::Uninitialized),
-            },
+        match index {
+            i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
+            i if i == 0 => Value::String(self.record.full_line.to_string()),
+            i => self
+                .record
+                .fields
+                .get((i - 1) as usize)
+                .map(|s| Value::String(s.to_string()))
+                .unwrap_or(Value::Uninitialized),
         }
     }
 
     pub(crate) fn for_variables(variables: &mut Variables) -> MutableContext {
+        let empty_record = variables.record_for_line("");
         MutableContext {
             variables: variables,
-            record: None,
+            record: empty_record,
         }
     }
 
     pub(crate) fn set_record_with_line(&mut self, line: &'a str) {
-        self.record = Some(self.variables.record_for_line(line));
+        self.record = self.variables.record_for_line(line);
     }
 
     pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T

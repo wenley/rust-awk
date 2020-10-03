@@ -84,7 +84,6 @@ mod tests {
     fn test_parse_action() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_action(r#"{ print("hello"); }"#);
         assert!(result.is_ok());

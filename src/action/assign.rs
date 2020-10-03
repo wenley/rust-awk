@@ -63,7 +63,6 @@ mod tests {
     fn assignment_updates_variables() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let assign_statement = parse_assign_statement(r#"foo = 1 + 2"#).unwrap().1;
         assign_statement.evaluate(&functions, &mut context);
@@ -77,7 +76,6 @@ mod tests {
     fn test_parse_assign_statement() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_assign_statement(r#"variable = "hi""#);
         let empty_vec: Vec<&'static str> = vec![];

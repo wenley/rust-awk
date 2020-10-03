@@ -111,7 +111,6 @@ mod tests {
     fn literals_can_evaluate() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let string = Literal::String("hello".to_string());
         assert_eq!(
@@ -129,7 +128,6 @@ mod tests {
     fn test_parse_literals() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);

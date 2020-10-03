@@ -172,8 +172,6 @@ mod tests {
     fn test_and_parsing() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = and_parser(parse_literal);
 
         let result = parser(r#""a" && 1"#);
@@ -202,8 +200,6 @@ mod tests {
     fn test_or_parsing() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = or_parser(parse_literal);
 
         let result = parser(r#""a" || 1"#);
@@ -239,8 +235,6 @@ mod tests {
     fn test_not_parsing() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = not_parser(parse_literal);
 
         let result = parser(r#"!1"#);
@@ -283,8 +277,6 @@ mod tests {
     fn test_iteration_compression() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = not_parser(parse_literal);
 
         let result = parser(r#""abc""#);

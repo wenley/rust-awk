@@ -60,7 +60,6 @@ mod tests {
     fn print_statement_produces_value() {
         let (functions, mut empty_variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut empty_variables);
-        context.set_record_with_line("");
 
         let print_statement = parse_print_statement(r#"print("hello")"#).unwrap().1;
         assert_eq!(
