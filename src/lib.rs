@@ -131,7 +131,8 @@ impl ProgramRun {
     }
 
     pub fn apply_args(&mut self, args: &parse_args::Args) {
-        self.variables.set_field_separator(&args.field_separator);
+        self.variables
+            .assign_variable("FS", value::Value::String(args.field_separator.clone()));
         for (name, value) in args.variables.iter() {
             self.variables
                 .assign_variable(name, value::Value::String(value.to_string()));

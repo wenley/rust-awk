@@ -116,6 +116,9 @@ impl VariableStore for Variables {
             }
         }
 
+        if variable_name == "FS" {
+            self.set_field_separator(&value.coerce_to_string());
+        }
         self.global_variables.assign_variable(variable_name, value);
     }
 }
@@ -129,7 +132,7 @@ impl Variables {
         }
     }
 
-    pub(crate) fn set_field_separator(&mut self, new_separator: &str) {
+    fn set_field_separator(&mut self, new_separator: &str) {
         if new_separator.len() == 1 {
             self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
         } else {
