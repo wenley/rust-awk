@@ -23,27 +23,9 @@ fn main() {
 }
 
 fn process_stdin(mut run: rust_awk::ProgramRun) {
-    let stdin = stdin();
-    let mut buffer = String::new();
-    loop {
-        match stdin.read_line(&mut buffer) {
-            Ok(n) => {
-                if n == 0 {
-                    break;
-                }
-                if buffer.chars().last().unwrap() == '\n' {
-                    buffer.truncate(n - 1);
-                }
-                for line in run.output_for_line(&buffer) {
-                    println!("{}", line);
-                }
-                buffer.clear();
-            }
-            Err(error) => {
-                eprintln!("Error encountered: {}", error);
-                break;
-            }
-        }
+    let mut stdin = stdin();
+    for line in run.process_file(&mut stdin) {
+        println!("{}", line);
     }
 }
 

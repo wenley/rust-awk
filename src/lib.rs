@@ -1,4 +1,4 @@
-use std::io::BufRead;
+use std::io::{BufRead, BufReader, Stdin, Read};
 
 extern crate nom;
 extern crate regex;
@@ -103,12 +103,30 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
     (run, parsed_args.filepaths_to_parse)
 }
 
+type IOResult = std::io::Result<usize>;
+
+pub trait LineReadable {
+    fn trait_read_line(&mut self, buffer: &mut String) -> IOResult;
+}
+
+impl LineReadable for Stdin {
+    fn trait_read_line(&mut self, buffer: &mut String) -> IOResult {
+        self.read_line(buffer)
+    }
+}
+
+impl<T: Read> LineReadable for BufReader<T> {
+    fn trait_read_line(&mut self, buffer: &mut String) -> IOResult {
+        self.read_line(buffer)
+    }
+}
+
 impl ProgramRun {
-    pub fn process_file<R: BufRead>(&mut self, reader: &mut R) -> Vec<String> {
+    pub fn process_file<LR: LineReadable>(&mut self, reader: &mut LR) -> Vec<String> {
         let mut buffer = String::new();
         let mut output = vec![];
         loop {
-            match reader.read_line(&mut buffer) {
+            match reader.trait_read_line(&mut buffer) {
                 Ok(n) => {
                     if n == 0 {
                         break;
