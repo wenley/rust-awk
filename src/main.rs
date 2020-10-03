@@ -14,18 +14,13 @@ fn main() {
         .for_each(|line| println!("{}", line));
 
     if input_file_paths.len() == 0 {
-        process_stdin(run);
+        for line in run.process_file(&mut stdin()) {
+            println!("{}", line);
+        }
     } else {
         for filepath in input_file_paths.iter() {
             process_file(&mut run, &filepath);
         }
-    }
-}
-
-fn process_stdin(mut run: rust_awk::ProgramRun) {
-    let mut stdin = stdin();
-    for line in run.process_file(&mut stdin) {
-        println!("{}", line);
     }
 }
 
