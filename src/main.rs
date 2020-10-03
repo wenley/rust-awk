@@ -1,6 +1,6 @@
 use std::env;
 use std::fs::File;
-use std::io::{stdin, BufRead, BufReader};
+use std::io::{stdin, BufReader};
 
 extern crate rust_awk;
 
@@ -55,26 +55,8 @@ fn process_file(run: &mut rust_awk::ProgramRun, path: &str) {
             return;
         }
     };
-    let mut buffer = String::new();
     let mut reader = BufReader::new(file);
-    loop {
-        match reader.read_line(&mut buffer) {
-            Ok(n) => {
-                if n == 0 {
-                    break;
-                }
-                if buffer.chars().last().unwrap() == '\n' {
-                    buffer.truncate(n - 1);
-                }
-                for output_line in run.output_for_line(&buffer) {
-                    println!("{}", output_line);
-                }
-                buffer.clear();
-            }
-            Err(error) => {
-                eprintln!("Error encountered: {}", error);
-                break;
-            }
-        }
+    for line in run.process_file(&mut reader) {
+        println!("{}", line);
     }
 }

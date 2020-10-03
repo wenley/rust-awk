@@ -1,3 +1,5 @@
+use std::io::BufRead;
+
 extern crate nom;
 extern crate regex;
 
@@ -102,6 +104,30 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
 }
 
 impl ProgramRun {
+    pub fn process_file<R: BufRead>(&mut self, reader: &mut R) -> Vec<String> {
+        let mut buffer = String::new();
+        let mut output = vec![];
+        loop {
+            match reader.read_line(&mut buffer) {
+                Ok(n) => {
+                    if n == 0 {
+                        break;
+                    }
+                    if buffer.chars().last().unwrap() == '\n' {
+                        buffer.truncate(n - 1);
+                    }
+                    output.append(&mut self.output_for_line(&buffer));
+                    buffer.clear();
+                }
+                Err(error) => {
+                    eprintln!("Error encountered: {}", error);
+                    break;
+                }
+            }
+        }
+        output
+    }
+
     pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
         // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
