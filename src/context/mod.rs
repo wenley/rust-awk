@@ -1,4 +1,4 @@
-use crate::value::Value;
+use crate::value::{NumericValue, Value};
 
 pub(crate) mod stack_frame;
 pub(crate) mod variables;
@@ -46,6 +46,10 @@ impl<'a> MutableContext<'a> {
 
     pub(crate) fn set_record_with_line(&mut self, line: &'a str) {
         self.record = self.variables.record_for_line(line);
+        self.variables.assign_variable(
+            "NF",
+            Value::Numeric(NumericValue::Integer(self.record.fields.len() as i64)),
+        );
     }
 
     pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
