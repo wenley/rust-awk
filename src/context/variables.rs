@@ -42,6 +42,17 @@ impl Variables {
             fields: fields,
         }
     }
+
+    pub(crate) fn increment_variable(&mut self, variable_name: &str) {
+        match self.fetch_variable(variable_name).coerce_to_numeric() {
+            NumericValue::Integer(i) => {
+                self.assign_variable(variable_name, Value::Numeric(NumericValue::Integer(i + 1)))
+            }
+            NumericValue::Float(f) => {
+                self.assign_variable(variable_name, Value::Numeric(NumericValue::Float(f + 1.0)))
+            }
+        };
+    }
 }
 
 impl VariableStore for Variables {

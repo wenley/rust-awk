@@ -5,7 +5,7 @@ use crate::{
     parse_args,
     printable::Printable,
     program::Program,
-    value,
+    value::{NumericValue, Value},
 };
 
 pub struct ProgramRun {
@@ -33,13 +33,18 @@ impl<T: Read> LineReadable for BufReader<T> {
 
 impl ProgramRun {
     pub(crate) fn new_for_program(program: Program) -> ProgramRun {
+        let mut variables = Variables::empty();
+        variables.assign_variable("NR", Value::Numeric(NumericValue::Integer(0)));
         ProgramRun {
             program: program,
-            variables: Variables::empty(),
+            variables: variables,
         }
     }
 
     pub fn process_file<LR: LineReadable>(&mut self, reader: &mut LR) -> Vec<String> {
+        self.variables
+            .assign_variable("FNR", Value::Numeric(NumericValue::Integer(0)));
+
         let mut buffer = String::new();
         let mut output = vec![];
         loop {
@@ -66,6 +71,8 @@ impl ProgramRun {
     fn output_for_line(&mut self, line: &str) -> Vec<String> {
         // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
+        self.variables.increment_variable("NR");
+        self.variables.increment_variable("FNR");
         let mut context = MutableContext::for_variables(&mut self.variables);
         context.set_record_with_line(line);
 
@@ -94,10 +101,10 @@ impl ProgramRun {
 
     pub(super) fn apply_args(&mut self, args: &parse_args::Args) {
         self.variables
-            .assign_variable("FS", value::Value::String(args.field_separator.clone()));
+            .assign_variable("FS", Value::String(args.field_separator.clone()));
         for (name, value) in args.variables.iter() {
             self.variables
-                .assign_variable(name, value::Value::String(value.to_string()));
+                .assign_variable(name, Value::String(value.to_string()));
         }
     }
 }
