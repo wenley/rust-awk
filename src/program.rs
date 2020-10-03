@@ -13,7 +13,7 @@ use crate::{
     item::{parse_item, Item},
 };
 
-pub struct Program {
+pub(super) struct Program {
     pub(crate) items: Vec<Item>,
     pub(crate) functions: Functions,
 }
@@ -51,7 +51,7 @@ fn parse_item_list(input: &str) -> IResult<&str, (Vec<Item>, Vec<FunctionDefinit
     )(input)
 }
 
-pub fn parse_program(program_text: &str) -> Program {
+pub(super) fn parse_program(program_text: &str) -> Program {
     match all_consuming(parse_item_list)(program_text) {
         Ok((_, (items, functions))) => {
             let mut function_map = HashMap::new();

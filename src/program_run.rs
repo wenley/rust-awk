@@ -63,7 +63,7 @@ impl ProgramRun {
         output
     }
 
-    pub fn output_for_line(&mut self, line: &str) -> Vec<String> {
+    fn output_for_line(&mut self, line: &str) -> Vec<String> {
         // Need explicit borrow of the variables to avoid borrowing `self` later
         let functions = &self.program.functions;
         let mut context = MutableContext::for_variables(&mut self.variables);
@@ -91,7 +91,7 @@ impl ProgramRun {
             .output
     }
 
-    pub fn apply_args(&mut self, args: &parse_args::Args) {
+    pub(super) fn apply_args(&mut self, args: &parse_args::Args) {
         self.variables
             .assign_variable("FS", value::Value::String(args.field_separator.clone()));
         for (name, value) in args.variables.iter() {
