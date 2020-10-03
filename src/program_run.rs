@@ -33,11 +33,9 @@ impl<T: Read> LineReadable for BufReader<T> {
 
 impl ProgramRun {
     pub(crate) fn new_for_program(program: Program) -> ProgramRun {
-        let mut variables = Variables::empty();
-        variables.assign_variable("NR", Value::Numeric(NumericValue::Integer(0)));
         ProgramRun {
             program: program,
-            variables: variables,
+            variables: Variables::empty(),
         }
     }
 
@@ -102,6 +100,11 @@ impl ProgramRun {
     pub(super) fn apply_args(&mut self, args: &parse_args::Args) {
         self.variables
             .assign_variable("FS", Value::String(args.field_separator.clone()));
+        self.variables.assign_variable(
+            "ARGC",
+            Value::Numeric(NumericValue::Integer(args.filepaths_to_parse.len() as i64)),
+        );
+
         for (name, value) in args.variables.iter() {
             self.variables
                 .assign_variable(name, Value::String(value.to_string()));

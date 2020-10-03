@@ -16,11 +16,20 @@ pub(crate) struct Variables {
 
 impl Variables {
     pub(crate) fn empty() -> Variables {
-        Variables {
+        let mut default_variables = Variables {
             field_separator: FieldSeparator::Character(' '),
             global_variables: StackFrame::empty(),
             function_variables: vec![],
-        }
+        };
+
+        // Assign all default variable values
+        default_variables.assign_variable("NR", Value::Numeric(NumericValue::Integer(0)));
+        default_variables.assign_variable("OFS", Value::String(" ".to_string()));
+        default_variables.assign_variable("ORS", Value::String("\n".to_string()));
+        default_variables.assign_variable("OFMT", Value::String("%.6g".to_string()));
+        default_variables.assign_variable("CONVFMT", Value::String("%.6g".to_string()));
+
+        default_variables
     }
 
     pub(super) fn set_field_separator(&mut self, new_separator: &str) {
