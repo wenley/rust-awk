@@ -27,3 +27,13 @@ pub fn start_run(args: Vec<String>) -> (ProgramRun, Vec<String>) {
 
     (run, parsed_args.filepaths_to_parse)
 }
+
+#[cfg(test)]
+mod test_utilities {
+    use super::*;
+    use std::collections::HashMap;
+
+    pub(crate) fn empty_functions_and_variables() -> (function::Functions, basic_types::Variables) {
+        (HashMap::new(), basic_types::Variables::empty())
+    }
+}

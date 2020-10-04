@@ -59,13 +59,7 @@ pub(super) fn parse_while_statement(input: &str) -> IResult<&str, Box<dyn Statem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{basic_types::Variables, function::Functions};
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn test_parse_while_statement() {

@@ -70,13 +70,7 @@ pub(super) fn parse_if_else_statement(input: &str) -> IResult<&str, Box<dyn Stat
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{basic_types::Variables, function::Functions};
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn if_produces_correct_value() {

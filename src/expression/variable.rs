@@ -64,15 +64,9 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::{parse_function, Functions};
+    use crate::function::parse_function;
+    use crate::test_utilities::empty_functions_and_variables;
     use crate::value::NumericValue;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
 
     #[test]
     fn variables_can_evaluate() {

@@ -48,16 +48,10 @@ pub(super) fn parse_assign_statement(input: &str) -> IResult<&str, Box<dyn State
 mod tests {
     use super::*;
     use crate::{
-        basic_types::{VariableStore, Variables},
-        function::Functions,
+        basic_types::VariableStore,
+        test_utilities::empty_functions_and_variables,
         value::{NumericValue, Value},
     };
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
 
     #[test]
     fn assignment_updates_variables() {
