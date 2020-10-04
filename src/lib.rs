@@ -2,7 +2,7 @@ extern crate nom;
 extern crate regex;
 
 mod action;
-mod basic_types;
+mod context;
 mod expression;
 mod function;
 mod item;
@@ -33,7 +33,7 @@ mod test_utilities {
     use super::*;
     use std::collections::HashMap;
 
-    pub(crate) fn empty_functions_and_variables() -> (function::Functions, basic_types::Variables) {
-        (HashMap::new(), basic_types::Variables::empty())
+    pub(crate) fn empty_functions_and_variables() -> (function::Functions, context::Variables) {
+        (HashMap::new(), context::Variables::empty())
     }
 }

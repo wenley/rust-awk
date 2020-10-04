@@ -1,7 +1,7 @@
 use std::io::{BufRead, BufReader, Read, Stdin};
 
 use crate::{
-    basic_types::{MutableContext, VariableStore, Variables},
+    context::{MutableContext, VariableStore, Variables},
     parse_args,
     printable::Printable,
     program::Program,

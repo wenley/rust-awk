@@ -9,7 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::{basic_types::MutableContext, function::Functions, printable::Printable, value::Value};
+use crate::{context::MutableContext, function::Functions, printable::Printable, value::Value};
 
 mod binary_comparison;
 mod binary_math;

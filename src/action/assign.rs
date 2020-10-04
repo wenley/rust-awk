@@ -6,7 +6,7 @@ use nom::{
 
 use super::Statement;
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     expression::{parse_assignable, parse_expression, Assign, Expression},
     function::Functions,
     printable::Printable,
@@ -48,7 +48,7 @@ pub(super) fn parse_assign_statement(input: &str) -> IResult<&str, Box<dyn State
 mod tests {
     use super::*;
     use crate::{
-        basic_types::VariableStore,
+        context::VariableStore,
         test_utilities::empty_functions_and_variables,
         value::{NumericValue, Value},
     };
