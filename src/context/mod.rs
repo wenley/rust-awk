@@ -1,4 +1,4 @@
-use crate::value::{Value, UNINITIALIZED_VALUE};
+use crate::value::Value;
 
 pub(crate) mod stack_frame;
 pub(crate) mod variables;
@@ -66,31 +66,6 @@ impl VariableStore for MutableContext<'_> {
 
     fn assign_variable(&mut self, variable_name: &str, value: Value) {
         self.variables.assign_variable(variable_name, value);
-    }
-}
-
-impl VariableStore for Variables {
-    fn fetch_variable(&self, variable_name: &str) -> Value {
-        let last_frame = self.function_variables.last();
-
-        last_frame
-            .and_then(|frame| frame.fetch_variable(variable_name))
-            .or_else(|| self.global_variables.fetch_variable(variable_name))
-            .unwrap_or_else(|| UNINITIALIZED_VALUE.clone())
-    }
-
-    fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        if let Some(frame) = self.function_variables.last_mut() {
-            if let Some(_) = frame.fetch_variable(variable_name) {
-                frame.assign_variable(variable_name, value);
-                return;
-            }
-        }
-
-        if variable_name == "FS" {
-            self.set_field_separator(&value.coerce_to_string());
-        }
-        self.global_variables.assign_variable(variable_name, value);
     }
 }
 
