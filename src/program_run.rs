@@ -81,12 +81,13 @@ impl ProgramRun {
     pub fn output_for_begin_items(&mut self) -> Vec<String> {
         let variables = &mut self.variables;
         let functions = &self.program.functions;
+        let mut context = MutableContext::for_variables(variables);
 
         self.program
             .items
             .iter()
             .fold(Printable::wrap(()), |result, item| {
-                result.and_then(|_| item.output_for_begin(functions, variables))
+                result.and_then(|_| item.output_for_begin(functions, &mut context))
             })
             .output
     }

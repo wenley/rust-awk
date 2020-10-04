@@ -2,7 +2,7 @@ use nom::{character::complete::multispace0, combinator::map, sequence::tuple, IR
 
 use crate::{
     action::{parse_action, Action},
-    basic_types::{MutableContext, Variables},
+    basic_types::MutableContext,
     function::Functions,
     pattern::{parse_item_pattern, Pattern},
     printable::Printable,
@@ -30,16 +30,13 @@ impl Item {
             })
     }
 
-    pub(crate) fn output_for_begin(
+    pub(crate) fn output_for_begin<'a>(
         &self,
         functions: &Functions,
-        variables: &mut Variables,
+        context: &mut MutableContext<'a>,
     ) -> Printable<()> {
         if let Pattern::Begin = self.pattern {
-            let mut context = MutableContext::for_variables(variables);
-            context.set_record_with_line("");
-
-            self.action.output_for_line(functions, &mut context)
+            self.action.output_for_line(functions, context)
         } else {
             Printable::wrap(())
         }
@@ -59,6 +56,7 @@ pub(crate) fn parse_item(input: &str) -> IResult<&str, Item> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::basic_types::Variables;
     use crate::function::Functions;
     use std::collections::HashMap;
 
