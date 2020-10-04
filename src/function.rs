@@ -11,7 +11,7 @@ use std::ops::Index;
 
 use crate::{
     action::{parse_action, Action},
-    context::{MutableContext, StackFrame},
+    context::{stack_frame::StackFrame, MutableContext},
     expression::variable::parse_variable_name,
     printable::Printable,
     value::{Value, UNINITIALIZED_VALUE},

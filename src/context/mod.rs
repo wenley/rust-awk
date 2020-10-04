@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-
 use crate::value::{Value, UNINITIALIZED_VALUE};
 
+pub(crate) mod stack_frame;
 pub(crate) mod variables;
 
+use stack_frame::StackFrame;
 pub(crate) use variables::Variables;
 
 struct Record<'a> {
@@ -56,26 +56,6 @@ impl<'a> MutableContext<'a> {
         let output = f(self);
         self.variables.function_variables.pop();
         output
-    }
-}
-
-pub(crate) struct StackFrame {
-    variables: HashMap<String, Value>,
-}
-
-impl StackFrame {
-    pub(crate) fn empty() -> StackFrame {
-        StackFrame {
-            variables: HashMap::new(),
-        }
-    }
-
-    fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
-        self.variables.get(variable_name).map(|val| val.clone())
-    }
-
-    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        self.variables.insert(variable_name.to_string(), value);
     }
 }
 
