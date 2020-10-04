@@ -10,7 +10,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     function::Functions,
     printable::Printable,
     value::{NumericValue, Value},
@@ -159,21 +159,12 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn test_and_parsing() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = and_parser(parse_literal);
 
         let result = parser(r#""a" && 1"#);
@@ -202,8 +193,6 @@ mod tests {
     fn test_or_parsing() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = or_parser(parse_literal);
 
         let result = parser(r#""a" || 1"#);
@@ -239,8 +228,6 @@ mod tests {
     fn test_not_parsing() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = not_parser(parse_literal);
 
         let result = parser(r#"!1"#);
@@ -283,8 +270,6 @@ mod tests {
     fn test_iteration_compression() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = not_parser(parse_literal);
 
         let result = parser(r#""abc""#);

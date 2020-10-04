@@ -9,7 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::{basic_types::MutableContext, function::Functions, printable::Printable, value::Value};
+use crate::{context::MutableContext, function::Functions, printable::Printable, value::Value};
 
 mod binary_comparison;
 mod binary_math;
@@ -83,21 +83,13 @@ fn parse_parens(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
+    use crate::test_utilities::empty_functions_and_variables;
     use crate::value::NumericValue;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
 
     #[test]
     fn test_parse_parens() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_expression("( 1 )");
         assert_eq!(result.is_ok(), true);
@@ -118,7 +110,6 @@ mod tests {
     fn test_boolean_precedence() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_expression("1 && 1 || 0 && 1");
         assert_eq!(result.is_ok(), true);

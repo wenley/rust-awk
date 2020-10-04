@@ -8,7 +8,7 @@ use nom::{
 };
 
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     function::Functions,
     printable::Printable,
     value::{parse_numeric, NumericValue, Value},
@@ -98,20 +98,12 @@ fn parse_regex_literal(input: &str) -> ExpressionParseResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn literals_can_evaluate() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let string = Literal::String("hello".to_string());
         assert_eq!(
@@ -129,7 +121,6 @@ mod tests {
     fn test_parse_literals() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_literal("1");
         assert_eq!(result.is_ok(), true);

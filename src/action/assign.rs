@@ -6,7 +6,7 @@ use nom::{
 
 use super::Statement;
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     expression::{parse_assignable, parse_expression, Assign, Expression},
     function::Functions,
     printable::Printable,
@@ -48,22 +48,15 @@ pub(super) fn parse_assign_statement(input: &str) -> IResult<&str, Box<dyn State
 mod tests {
     use super::*;
     use crate::{
-        basic_types::{VariableStore, Variables},
-        function::Functions,
+        context::VariableStore,
+        test_utilities::empty_functions_and_variables,
         value::{NumericValue, Value},
     };
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
 
     #[test]
     fn assignment_updates_variables() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let assign_statement = parse_assign_statement(r#"foo = 1 + 2"#).unwrap().1;
         assign_statement.evaluate(&functions, &mut context);
@@ -77,7 +70,6 @@ mod tests {
     fn test_parse_assign_statement() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_assign_statement(r#"variable = "hi""#);
         let empty_vec: Vec<&'static str> = vec![];

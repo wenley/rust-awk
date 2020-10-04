@@ -7,7 +7,7 @@ use nom::{
 
 use super::{parse_action, Action, Statement};
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     expression::{parse_expression, Expression},
     function::Functions,
     printable::Printable,
@@ -59,19 +59,12 @@ pub(super) fn parse_while_statement(input: &str) -> IResult<&str, Box<dyn Statem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{basic_types::Variables, function::Functions};
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn test_parse_while_statement() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_while_statement(
             r#"while (0) {

@@ -10,7 +10,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     function::Functions,
     printable::Printable,
     value::{NumericValue, Value},
@@ -98,21 +98,12 @@ where
 mod tests {
     use super::super::{binary_math::addition_parser, literal::parse_literal};
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn test_regex_match() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = regex_parser(addition_parser(parse_literal));
 
         let result = parser("1 ~ 2");

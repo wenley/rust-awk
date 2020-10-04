@@ -10,7 +10,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     function::Functions,
     printable::Printable,
     value::{NumericValue, Value},
@@ -146,21 +146,12 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn test_comparing_numbers() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = comparison_parser(parse_literal);
 
         let result = parser("1 < 2");
@@ -182,8 +173,6 @@ mod tests {
     fn test_comparing_strings() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = comparison_parser(parse_literal);
 
         let result = parser(r#""a" < "b""#);
@@ -205,8 +194,6 @@ mod tests {
     fn test_comparing_numbers_and_strings() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = comparison_parser(parse_literal);
 
         // Numbers come before letters

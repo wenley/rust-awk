@@ -8,7 +8,7 @@ use nom::{
 
 use super::Statement;
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     expression::{parse_expression, Expression},
     function::Functions,
     printable::Printable,
@@ -48,19 +48,12 @@ pub(super) fn parse_print_statement(input: &str) -> IResult<&str, Box<dyn Statem
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{basic_types::Variables, function::Functions};
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn print_statement_produces_value() {
         let (functions, mut empty_variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut empty_variables);
-        context.set_record_with_line("");
 
         let print_statement = parse_print_statement(r#"print("hello")"#).unwrap().1;
         assert_eq!(

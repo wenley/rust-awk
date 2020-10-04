@@ -7,7 +7,7 @@ use nom::{
     IResult,
 };
 
-use crate::{basic_types::MutableContext, function::Functions, printable::Printable};
+use crate::{context::MutableContext, function::Functions, printable::Printable};
 
 mod assign;
 mod do_while;
@@ -71,20 +71,12 @@ fn parse_simple_statement(input: &str) -> IResult<&str, Box<dyn Statement>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn test_parse_action() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_action(r#"{ print("hello"); }"#);
         assert!(result.is_ok());

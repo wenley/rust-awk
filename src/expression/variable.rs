@@ -4,7 +4,7 @@ use nom::{re_find, IResult};
 
 use super::{Assign, Expression, ExpressionParseResult};
 use crate::{
-    basic_types::{MutableContext, VariableStore},
+    context::{MutableContext, VariableStore},
     function::Functions,
     printable::Printable,
     value::Value,
@@ -64,15 +64,9 @@ pub fn parse_variable_name(input: &str) -> IResult<&str, &str> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::{parse_function, Functions};
+    use crate::function::parse_function;
+    use crate::test_utilities::empty_functions_and_variables;
     use crate::value::NumericValue;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
 
     #[test]
     fn variables_can_evaluate() {
@@ -80,7 +74,6 @@ mod tests {
         let value = Value::Numeric(NumericValue::Integer(1));
         variables.assign_variable("foo", value.clone());
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         assert_eq!(
             Variable {
@@ -103,7 +96,6 @@ mod tests {
         functions.insert("foo".to_string(), function);
 
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_assignable_variable("foo");
         assert!(result.is_ok());

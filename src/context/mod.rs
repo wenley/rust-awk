@@ -1,7 +1,10 @@
-use regex;
-use std::collections::HashMap;
+use crate::value::Value;
 
-use crate::value::{Value, UNINITIALIZED_VALUE};
+pub(crate) mod stack_frame;
+pub(crate) mod variables;
+
+use stack_frame::StackFrame;
+pub(crate) use variables::Variables;
 
 struct Record<'a> {
     full_line: &'a str,
@@ -14,47 +17,35 @@ pub(crate) trait VariableStore {
     fn assign_variable(&mut self, variable_name: &str, value: Value);
 }
 
-enum FieldSeparator {
-    Character(char),
-    Regex(regex::Regex),
-}
-
-pub(crate) struct Variables {
-    field_separator: FieldSeparator,
-    global_variables: StackFrame,
-    function_variables: Vec<StackFrame>,
-}
-
 pub(crate) struct MutableContext<'a> {
     variables: &'a mut Variables,
-    record: Option<Record<'a>>,
+    record: Record<'a>,
 }
 
 impl<'a> MutableContext<'a> {
     pub(crate) fn fetch_field(&self, index: i64) -> Value {
-        match &self.record {
-            None => Value::String("".to_string()),
-            Some(record) => match index {
-                i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
-                i if i == 0 => Value::String(record.full_line.to_string()),
-                i => record
-                    .fields
-                    .get((i - 1) as usize)
-                    .map(|s| Value::String(s.to_string()))
-                    .unwrap_or(Value::Uninitialized),
-            },
+        match index {
+            i if i < 0 => panic!("Field indexes cannot be negative: {}", index),
+            i if i == 0 => Value::String(self.record.full_line.to_string()),
+            i => self
+                .record
+                .fields
+                .get((i - 1) as usize)
+                .map(|s| Value::String(s.to_string()))
+                .unwrap_or(Value::Uninitialized),
         }
     }
 
     pub(crate) fn for_variables(variables: &mut Variables) -> MutableContext {
+        let empty_record = variables.record_for_line("");
         MutableContext {
             variables: variables,
-            record: None,
+            record: empty_record,
         }
     }
 
     pub(crate) fn set_record_with_line(&mut self, line: &'a str) {
-        self.record = Some(self.variables.record_for_line(line));
+        self.record = self.variables.record_for_line(line);
     }
 
     pub(crate) fn with_stack_frame<T, F>(&mut self, frame: StackFrame, f: F) -> T
@@ -68,26 +59,6 @@ impl<'a> MutableContext<'a> {
     }
 }
 
-pub(crate) struct StackFrame {
-    variables: HashMap<String, Value>,
-}
-
-impl StackFrame {
-    pub(crate) fn empty() -> StackFrame {
-        StackFrame {
-            variables: HashMap::new(),
-        }
-    }
-
-    fn fetch_variable(&self, variable_name: &str) -> Option<Value> {
-        self.variables.get(variable_name).map(|val| val.clone())
-    }
-
-    pub(crate) fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        self.variables.insert(variable_name.to_string(), value);
-    }
-}
-
 impl VariableStore for MutableContext<'_> {
     fn fetch_variable(&self, variable_name: &str) -> Value {
         self.variables.fetch_variable(variable_name)
@@ -95,58 +66,6 @@ impl VariableStore for MutableContext<'_> {
 
     fn assign_variable(&mut self, variable_name: &str, value: Value) {
         self.variables.assign_variable(variable_name, value);
-    }
-}
-
-impl VariableStore for Variables {
-    fn fetch_variable(&self, variable_name: &str) -> Value {
-        let last_frame = self.function_variables.last();
-
-        last_frame
-            .and_then(|frame| frame.fetch_variable(variable_name))
-            .or_else(|| self.global_variables.fetch_variable(variable_name))
-            .unwrap_or_else(|| UNINITIALIZED_VALUE.clone())
-    }
-
-    fn assign_variable(&mut self, variable_name: &str, value: Value) {
-        if let Some(frame) = self.function_variables.last_mut() {
-            if let Some(_) = frame.fetch_variable(variable_name) {
-                frame.assign_variable(variable_name, value);
-                return;
-            }
-        }
-
-        self.global_variables.assign_variable(variable_name, value);
-    }
-}
-
-impl Variables {
-    pub(crate) fn empty() -> Variables {
-        Variables {
-            field_separator: FieldSeparator::Character(' '),
-            global_variables: StackFrame::empty(),
-            function_variables: vec![],
-        }
-    }
-
-    pub(crate) fn set_field_separator(&mut self, new_separator: &str) {
-        if new_separator.len() == 1 {
-            self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
-        } else {
-            self.field_separator = FieldSeparator::Regex(regex::Regex::new(new_separator).unwrap())
-        }
-    }
-
-    fn record_for_line<'a>(&self, line: &'a str) -> Record<'a> {
-        let fields = match &self.field_separator {
-            FieldSeparator::Character(' ') => line.split_whitespace().collect(),
-            FieldSeparator::Character(c1) => line.split(|c2| *c1 == c2).collect(),
-            FieldSeparator::Regex(re) => re.split(line).collect(),
-        };
-        Record {
-            full_line: line,
-            fields: fields,
-        }
     }
 }
 

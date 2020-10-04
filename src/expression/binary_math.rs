@@ -9,7 +9,7 @@ use nom::{
 
 use super::{Expression, ExpressionParseResult};
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     function::Functions,
     printable::Printable,
     value::{NumericValue, Value},
@@ -196,20 +196,12 @@ where
 mod tests {
     use super::super::literal::*;
     use super::*;
-    use crate::basic_types::Variables;
-    use crate::function::Functions;
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn binary_expressions_can_evaluate() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         assert_eq!(
             BinaryMath {
@@ -227,8 +219,6 @@ mod tests {
     fn binary_expressions_can_parse() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
-
         let parser = addition_parser(multiplication_parser(parse_literal));
 
         let result = parser("1 + 2 - 3 + 4 - 5.5");

@@ -8,7 +8,7 @@ use nom::{
 
 use super::{parse_action, Action, Statement};
 use crate::{
-    basic_types::MutableContext,
+    context::MutableContext,
     expression::{parse_expression, Expression},
     function::Functions,
     printable::Printable,
@@ -70,19 +70,12 @@ pub(super) fn parse_if_else_statement(input: &str) -> IResult<&str, Box<dyn Stat
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{basic_types::Variables, function::Functions};
-    use std::collections::HashMap;
-
-    fn empty_functions_and_variables() -> (Functions, Variables) {
-        let variables = Variables::empty();
-        (HashMap::new(), variables)
-    }
+    use crate::test_utilities::empty_functions_and_variables;
 
     #[test]
     fn if_produces_correct_value() {
         let (functions, mut empty_variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut empty_variables);
-        context.set_record_with_line("");
 
         let if_conditional = parse_if_else_statement(
             r#"if ("not empty") {
@@ -117,7 +110,6 @@ mod tests {
     fn test_parse_if_else_statement() {
         let (functions, mut variables) = empty_functions_and_variables();
         let mut context = MutableContext::for_variables(&mut variables);
-        context.set_record_with_line("");
 
         let result = parse_if_else_statement(
             r#"if (1) {
