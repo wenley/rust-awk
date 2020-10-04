@@ -1,7 +1,10 @@
-use regex;
 use std::collections::HashMap;
 
 use crate::value::{Value, UNINITIALIZED_VALUE};
+
+pub(crate) mod variables;
+
+pub(crate) use variables::Variables;
 
 struct Record<'a> {
     full_line: &'a str,
@@ -12,17 +15,6 @@ pub(crate) trait VariableStore {
     fn fetch_variable(&self, variable_name: &str) -> Value;
 
     fn assign_variable(&mut self, variable_name: &str, value: Value);
-}
-
-enum FieldSeparator {
-    Character(char),
-    Regex(regex::Regex),
-}
-
-pub(crate) struct Variables {
-    field_separator: FieldSeparator,
-    global_variables: StackFrame,
-    function_variables: Vec<StackFrame>,
 }
 
 pub(crate) struct MutableContext<'a> {
@@ -119,36 +111,6 @@ impl VariableStore for Variables {
             self.set_field_separator(&value.coerce_to_string());
         }
         self.global_variables.assign_variable(variable_name, value);
-    }
-}
-
-impl Variables {
-    pub(crate) fn empty() -> Variables {
-        Variables {
-            field_separator: FieldSeparator::Character(' '),
-            global_variables: StackFrame::empty(),
-            function_variables: vec![],
-        }
-    }
-
-    fn set_field_separator(&mut self, new_separator: &str) {
-        if new_separator.len() == 1 {
-            self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
-        } else {
-            self.field_separator = FieldSeparator::Regex(regex::Regex::new(new_separator).unwrap())
-        }
-    }
-
-    fn record_for_line<'a>(&self, line: &'a str) -> Record<'a> {
-        let fields = match &self.field_separator {
-            FieldSeparator::Character(' ') => line.split_whitespace().collect(),
-            FieldSeparator::Character(c1) => line.split(|c2| *c1 == c2).collect(),
-            FieldSeparator::Regex(re) => re.split(line).collect(),
-        };
-        Record {
-            full_line: line,
-            fields: fields,
-        }
     }
 }
 
