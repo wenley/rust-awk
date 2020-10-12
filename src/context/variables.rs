@@ -1,7 +1,7 @@
 use regex;
 
 use crate::context::{stack_frame::StackFrame, Record, VariableStore};
-use crate::value::{Value, UNINITIALIZED_VALUE};
+use crate::value::{NumericValue, Value, UNINITIALIZED_VALUE};
 
 pub(super) enum FieldSeparator {
     Character(char),
