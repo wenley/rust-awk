@@ -1,29 +1,38 @@
 use regex;
 
 use crate::context::{stack_frame::StackFrame, Record, VariableStore};
-use crate::value::{Value, UNINITIALIZED_VALUE};
+use crate::value::{NumericValue, Value, UNINITIALIZED_VALUE};
 
-pub(super) enum FieldSeparator {
+enum FieldSeparator {
     Character(char),
     Regex(regex::Regex),
 }
 
 pub(crate) struct Variables {
-    pub(super) field_separator: FieldSeparator,
+    field_separator: FieldSeparator,
     pub(super) global_variables: StackFrame,
     pub(super) function_variables: Vec<StackFrame>,
 }
 
 impl Variables {
     pub(crate) fn empty() -> Variables {
-        Variables {
+        let mut default_variables = Variables {
             field_separator: FieldSeparator::Character(' '),
             global_variables: StackFrame::empty(),
             function_variables: vec![],
-        }
+        };
+
+        // Assign all default variable values
+        default_variables.assign_variable("NR", Value::Numeric(NumericValue::Integer(0)));
+        default_variables.assign_variable("OFS", Value::String(" ".to_string()));
+        default_variables.assign_variable("ORS", Value::String("\n".to_string()));
+        default_variables.assign_variable("OFMT", Value::String("%.6g".to_string()));
+        default_variables.assign_variable("CONVFMT", Value::String("%.6g".to_string()));
+
+        default_variables
     }
 
-    pub(super) fn set_field_separator(&mut self, new_separator: &str) {
+    fn set_field_separator(&mut self, new_separator: &str) {
         if new_separator.len() == 1 {
             self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
         } else {
@@ -41,6 +50,17 @@ impl Variables {
             full_line: line,
             fields: fields,
         }
+    }
+
+    pub(crate) fn increment_variable(&mut self, variable_name: &str) {
+        match self.fetch_variable(variable_name).coerce_to_numeric() {
+            NumericValue::Integer(i) => {
+                self.assign_variable(variable_name, Value::Numeric(NumericValue::Integer(i + 1)))
+            }
+            NumericValue::Float(f) => {
+                self.assign_variable(variable_name, Value::Numeric(NumericValue::Float(f + 1.0)))
+            }
+        };
     }
 }
 

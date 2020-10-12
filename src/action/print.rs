@@ -8,7 +8,7 @@ use nom::{
 
 use super::Statement;
 use crate::{
-    context::MutableContext,
+    context::{MutableContext, VariableStore},
     expression::{parse_expression, Expression},
     function::Functions,
     printable::Printable,
@@ -32,7 +32,7 @@ impl Statement for Print {
             })
             .and_then(|strings| Printable {
                 value: (),
-                output: vec![strings.join(" ")],
+                output: vec![strings.join(&context.fetch_variable("OFS").coerce_to_string())],
             })
     }
 }
