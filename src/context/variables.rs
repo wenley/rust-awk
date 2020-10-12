@@ -3,13 +3,13 @@ use regex;
 use crate::context::{stack_frame::StackFrame, Record, VariableStore};
 use crate::value::{NumericValue, Value, UNINITIALIZED_VALUE};
 
-pub(super) enum FieldSeparator {
+enum FieldSeparator {
     Character(char),
     Regex(regex::Regex),
 }
 
 pub(crate) struct Variables {
-    pub(super) field_separator: FieldSeparator,
+    field_separator: FieldSeparator,
     pub(super) global_variables: StackFrame,
     pub(super) function_variables: Vec<StackFrame>,
 }
