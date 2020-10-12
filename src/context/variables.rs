@@ -32,7 +32,7 @@ impl Variables {
         default_variables
     }
 
-    pub(super) fn set_field_separator(&mut self, new_separator: &str) {
+    fn set_field_separator(&mut self, new_separator: &str) {
         if new_separator.len() == 1 {
             self.field_separator = FieldSeparator::Character(new_separator.chars().next().unwrap())
         } else {
