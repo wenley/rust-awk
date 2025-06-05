@@ -16,6 +16,7 @@ mod binary_math;
 mod boolean;
 mod field_reference;
 mod function;
+mod increment;
 mod literal;
 mod regex_match;
 pub(crate) mod variable;
@@ -32,6 +33,8 @@ pub(crate) trait Assign: Debug {
     fn assign<'a>(&self, functions: &Functions, context: &mut MutableContext, value: Value);
 }
 
+pub(crate) trait AssignableExpression: Expression + Assign {}
+
 type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;
 
 /// Tiers of parsing
@@ -40,14 +43,15 @@ type ExpressionParseResult<'a> = IResult<&'a str, Box<dyn Expression>>;
 /// operators. As we descend the levels, we encounter tighter-binding operators
 /// until we reach literals and the parenthesized expressions.
 
-pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn Assign>> {
+pub(crate) fn parse_assignable(input: &str) -> IResult<&str, Box<dyn AssignableExpression>> {
     variable::parse_assignable_variable(input)
 }
 
 pub(crate) fn parse_expression(input: &str) -> ExpressionParseResult {
     // Descending order of precedence
     let field_reference_parser = field_reference::field_reference_parser(parse_primary);
-    let not_parser = boolean::not_parser(field_reference_parser);
+    let increment_parser = increment::increment_decrement_parser(field_reference_parser);
+    let not_parser = boolean::not_parser(increment_parser);
     let multiplication_parser = binary_math::multiplication_parser(not_parser);
     let addition_parser = binary_math::addition_parser(multiplication_parser);
     let comparison_parser = binary_comparison::comparison_parser(addition_parser);

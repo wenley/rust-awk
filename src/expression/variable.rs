@@ -2,7 +2,7 @@ use regex::Regex;
 
 use nom::{re_find, IResult};
 
-use super::{Assign, Expression, ExpressionParseResult};
+use super::{Assign, Expression, AssignableExpression, ExpressionParseResult};
 use crate::{
     context::{MutableContext, VariableStore},
     function::Functions,
@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct Variable {
+pub(super) struct Variable {
     variable_name: String,
 }
 
@@ -34,6 +34,8 @@ impl Assign for Variable {
     }
 }
 
+impl AssignableExpression for Variable {}
+
 pub(super) fn parse_variable(input: &str) -> ExpressionParseResult {
     let (i, name) = parse_variable_name(input)?;
 
@@ -45,7 +47,7 @@ pub(super) fn parse_variable(input: &str) -> ExpressionParseResult {
     ))
 }
 
-pub(super) fn parse_assignable_variable(input: &str) -> IResult<&str, Box<dyn Assign>> {
+pub(super) fn parse_assignable_variable(input: &str) -> IResult<&str, Box<dyn AssignableExpression>> {
     let (i, name) = parse_variable_name(input)?;
 
     Result::Ok((
