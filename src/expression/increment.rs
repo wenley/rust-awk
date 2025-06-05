@@ -116,6 +116,7 @@ mod tests {
     use super::*;
     use crate::test_utilities::empty_functions_and_variables;
     use crate::value::NumericValue;
+    use crate::context::VariableStore;
 
     #[test]
     fn test_prefix_increment() {
